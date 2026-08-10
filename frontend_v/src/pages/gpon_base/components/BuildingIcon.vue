@@ -28,14 +28,17 @@
     </svg>
 </template>
 
-<script>
+<script lang="ts">
+import type { PropType } from "vue";
+import type { GponBuildingType } from "@/types/gpon";
+
 export default {
     name: "BuildingIcon",
     props: {
-        type: { required: true, type: String },
-        width: { required: false, default: 64 },
-        height: { required: false, default: 64 },
-        color: { required: false, default: "black" },
+        type: { required: false, type: String as PropType<GponBuildingType>, default: "building" },
+        width: { required: false, type: [String, Number], default: 64 },
+        height: { required: false, type: [String, Number], default: 64 },
+        color: { required: false, type: String, default: "black" },
     },
 };
 </script>

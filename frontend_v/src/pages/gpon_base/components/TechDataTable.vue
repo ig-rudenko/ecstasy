@@ -209,10 +209,12 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import Pill from "./Pill.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 import Paginator from "./Paginator.vue";
+import type { PropType } from "vue";
+import type { End3Type, GponAddress, GponPaginatedResponse, TechDataListItem } from "@/types/gpon";
 
 export default {
     name: "Table",
@@ -222,7 +224,7 @@ export default {
         Pill,
     },
     props: {
-        data: { required: true },
+        data: { required: true, type: Object as PropType<GponPaginatedResponse<TechDataListItem>> },
     },
     emits: ["fetch"],
     data() {
@@ -304,7 +306,8 @@ export default {
                 devicePort: this.filter.devicePort,
             });
         },
-        getFullAddress(address) {
+        /** Formats a building address for a table row. */
+        getFullAddress(address: GponAddress): string {
             let str = "";
             if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
             if (address.street.length) str += ` ${address.street},`;
@@ -319,16 +322,18 @@ export default {
             this.show_filter = false;
         },
 
-        customerLineTypeName(type) {
+        /** Returns a localized endpoint type label. */
+        customerLineTypeName(type: End3Type | null): string {
             if (type === "splitter") {
                 return "Сплиттер";
             } else if (type === "rizer") {
                 return "Райзер";
             } else {
-                return type;
+                return type ?? "";
             }
         },
-        customerLineTypeBackColor(type) {
+        /** Returns the endpoint badge background color. */
+        customerLineTypeBackColor(type: End3Type | null): string {
             if (type === "splitter") {
                 return "#CDFFCD";
             } else if (type === "rizer") {
@@ -337,7 +342,8 @@ export default {
                 return "#f2dafc";
             }
         },
-        customerLineTypeColor(type) {
+        /** Returns the endpoint badge text color. */
+        customerLineTypeColor(type: End3Type | null): string {
             if (type === "splitter") {
                 return "#007F00";
             } else if (type === "rizer") {
@@ -347,11 +353,13 @@ export default {
             }
         },
 
-        goToOLTDetailView(device_name, olt_port) {
+        /** Opens details of the selected OLT port. */
+        goToOLTDetailView(device_name: string, olt_port: string): void {
             window.location.href = `/gpon/tech-data/${device_name}?port=${olt_port}`;
         },
 
-        goToBuildingDetailView(houseID) {
+        /** Opens technical details of the selected building. */
+        goToBuildingDetailView(houseID: number): void {
             window.location.href = `/gpon/tech-data/building/${houseID}`;
         },
     },

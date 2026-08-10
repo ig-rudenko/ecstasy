@@ -6,7 +6,11 @@ export function verboseDatetime(date: string): string {
     return dateObject.toLocaleString("ru-RU");
 }
 
-export function verboseDate(date: string): string {
+/** Formats an optional ISO date for the Russian locale. */
+export function verboseDate(date: string | null): string {
+    if (!date) {
+        return "";
+    }
     // multiplied by 1000 so that the argument is in milliseconds, not seconds
     const dateObject = new Date(date);
     return dateObject.toLocaleString("ru-RU", { year: "numeric", month: "2-digit", day: "2-digit" });
@@ -30,7 +34,7 @@ export function markText(desc: string, pattern: string): string {
     return desc.replace(new RegExp(pattern, "ig"), (s) => "<mark>" + s + "</mark>");
 }
 
-export function formatAddress(address: Address): string {
+export function formatAddress(address: Address | null): string {
     if (!address) return "Выберите";
     let str = "";
     if (address.region !== "Севастополь") str += ` ${address.region},`;

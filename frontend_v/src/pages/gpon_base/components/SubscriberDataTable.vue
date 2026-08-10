@@ -254,11 +254,13 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import Pill from "./Pill.vue";
 import BuildingIcon from "./BuildingIcon.vue";
 import Paginator from "./Paginator.vue";
 import { verboseDate } from "@/formats.ts";
+import type { PropType } from "vue";
+import type { CustomerType, GponAddress, GponPaginatedResponse, SubscriberListItem } from "@/types/gpon";
 
 export default {
     name: "Table",
@@ -268,7 +270,7 @@ export default {
         Pill,
     },
     props: {
-        data: { required: true },
+        data: { required: true, type: Object as PropType<GponPaginatedResponse<SubscriberListItem>> },
     },
     emits: ["fetch"],
     data() {
@@ -355,7 +357,8 @@ export default {
             });
         },
 
-        getFullAddress(address) {
+        /** Formats a subscriber address for a table row. */
+        getFullAddress(address: GponAddress): string {
             let str = "";
             if (address.planStructure.length) str += `СНТ ${address.planStructure},`;
             if (address.street.length) str += ` ${address.street},`;
@@ -370,7 +373,8 @@ export default {
             this.show_filter = false;
         },
 
-        customerTypeName(type) {
+        /** Returns a localized customer type label. */
+        customerTypeName(type: CustomerType): string {
             if (type === "person") {
                 return "Физ. лицо";
             } else if (type === "company") {
@@ -379,7 +383,8 @@ export default {
                 return "Гос. контракт";
             }
         },
-        customerTypeBackColor(type) {
+        /** Returns the customer badge background color. */
+        customerTypeBackColor(type: CustomerType): string {
             if (type === "person") {
                 return "#CDFFCD";
             } else if (type === "company") {
@@ -388,7 +393,8 @@ export default {
                 return "#dae6fc";
             }
         },
-        customerTypeColor(type) {
+        /** Returns the customer badge text color. */
+        customerTypeColor(type: CustomerType): string {
             if (type === "person") {
                 return "#047f00";
             } else if (type === "company") {

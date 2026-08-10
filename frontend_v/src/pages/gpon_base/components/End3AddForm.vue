@@ -69,17 +69,19 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import Asterisk from "./Asterisk.vue";
 import AddressGetCreate from "./AddressGetCreate.vue";
+import type { PropType } from "vue";
+import type { End3CreateItem, End3Type } from "@/types/gpon";
 
 export default {
     name: "SplitterAddForm",
     components: { AddressGetCreate, Asterisk },
     props: {
-        initial: { required: true, type: Array },
-        end3Type: { required: true, type: String },
-        maxLimit: { required: false, default: -1 },
+        initial: { required: true, type: Array as PropType<End3CreateItem[]> },
+        end3Type: { required: true, type: String as PropType<End3Type> },
+        maxLimit: { required: false, type: Number, default: -1 },
     },
     data() {
         return {
@@ -87,7 +89,8 @@ export default {
         };
     },
     methods: {
-        addNew() {
+        /** Adds an empty endpoint row to the form. */
+        addNew(): void {
             if (this.maxLimit > 0 && this.initial.length >= this.maxLimit) {
                 this.showError = true;
                 return;

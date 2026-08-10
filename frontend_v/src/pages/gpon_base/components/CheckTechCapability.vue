@@ -2,58 +2,61 @@
 import { ref } from "vue";
 import Paginator from "primevue/paginator";
 
-import api from "@/services/api";
-import errorFmt from "@/errorFmt.ts";
-import { End3WithCapability, TechCapability, TechCapabilityStatus } from "@/types/gpon.ts";
-import { errorToast } from "@/services/my.toast.ts";
-import { Paginator as PaginatorType } from "@/types/paginator.ts";
+import errorFmt from "@/errorFmt";
+import { getEnd3CapabilityList } from "@/services/gpon";
+import { TechCapabilityStatus } from "@/types/gpon";
+import type {
+    End3CapabilitySearchQuery,
+    End3WithCapability,
+    GponPaginatedResponse,
+    TechCapability,
+} from "@/types/gpon";
+import { errorToast } from "@/services/my.toast";
 
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import End3CollapsedView from "@/pages/gpon_base/components/End3CollapsedView.vue";
 
 const visible = ref(false);
 const loading = ref(false);
-const formValue = ref({
+const formValue = ref<Omit<End3CapabilitySearchQuery, "page">>({
     street: "",
     house: "",
     block: "",
     tech_capability_status: TechCapabilityStatus.empty,
-    page: "1",
 });
-const resultData = ref<null | PaginatorType<End3WithCapability>>(null);
+const resultData = ref<GponPaginatedResponse<End3WithCapability> | null>(null);
 const capabilityMap = new Map<number, TechCapability[]>(); // для хранения данных об подключениях абонентов.
 
 const permissions = ["gpon.view_customer", "gpon.view_subscriberconnection"]; // Права только на просмотр.
 
-function findTechCapability(page: number = 1) {
-    formValue.value.page = page.toString();
-    const urlParams = new URLSearchParams(formValue.value);
-    const url = `/api/v1/gpon/tech-data/end3?${urlParams.toString()}`;
+/** Searches available technical capabilities using the current filters. */
+function findTechCapability(page: number = 1): void {
     loading.value = true;
 
-    api.get<PaginatorType<End3WithCapability>>(url)
-        .then((response) => {
-            resultData.value = response.data;
-            response.data.results.forEach((item) => {
+    getEnd3CapabilityList({ ...formValue.value, page })
+        .then((result) => {
+            resultData.value = result;
+            result.results.forEach((item) => {
                 capabilityMap.set(item.id, item.capability); // сохраняем данные для отображения.
             });
-            loading.value = false;
         })
         .catch((error) => {
             errorToast("Ошибка при проверке технической возможности", errorFmt(error));
+        })
+        .finally(() => {
             loading.value = false;
         });
 }
 
 /** Функция для удаления данных о подключении абонентов */
-function deleteTechCapabilityInfo(id: number) {
+function deleteTechCapabilityInfo(id: number): void {
     if (resultData.value) {
         resultData.value.results[id].capability = [];
     }
 }
 
 /** Функция для получения данных о подключении абонентов */
-function getTechCapabilityInfo(id: number) {
+function getTechCapabilityInfo(id: number): void {
     if (resultData.value) {
         const item = resultData.value.results[id];
         if (capabilityMap.has(item.id)) {

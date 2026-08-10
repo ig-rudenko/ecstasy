@@ -38,11 +38,13 @@
     <Message v-else severity="error"> Ошибка {{ error.message }}. Код ошибки {{ error.status }} </Message>
 </template>
 
-<script>
+<script lang="ts">
 import Asterisk from "./Asterisk.vue";
 
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getEnd3Addresses } from "@/services/gpon";
+import type { PropType } from "vue";
+import type { End3WithCapability, GponFilterEvent, GponLazyLoadEvent } from "@/types/gpon";
 import { formatAddress } from "@/formats";
 
 export default {
@@ -52,24 +54,24 @@ export default {
         Asterisk,
     },
     props: {
-        init: { required: false, default: null },
-        type: { required: false, type: String, default: "both" },
-        fromAddressID: { required: false, default: null },
+        init: { required: false, type: Object as PropType<End3WithCapability | null>, default: null },
+        type: { required: false, type: String as PropType<"both" | "splitter" | "rizer">, default: "both" },
+        fromAddressID: { required: false, type: Number, default: null },
         valid: { required: false, type: Boolean, default: true },
     },
     data() {
         return {
-            connection: null,
-            availableList: null,
+            connection: null as End3WithCapability | null,
+            availableList: [] as End3WithCapability[],
             searchQuery: "",
             isLoading: false,
             hasNextPage: true,
             nextPage: 1,
-            debounceTimer: null,
+            debounceTimer: null as ReturnType<typeof setTimeout> | null,
             pageSize: 20,
             error: {
-                status: null,
-                message: null,
+                status: null as number | string | null,
+                message: null as string | null,
             },
         };
     },
@@ -96,9 +98,9 @@ export default {
         },
     },
     methods: {
-        loadConnections({ reset = false } = {}) {
-            if (this.isLoading) return;
-            if (!reset && !this.hasNextPage) return;
+        /** Loads a page of splitters and risers for the selector. */
+        async loadConnections({ reset = false }: { reset?: boolean } = {}): Promise<void> {
+            if (this.isLoading || (!reset && !this.hasNextPage)) return;
 
             if (reset) {
                 this.availableList = [];
@@ -106,48 +108,42 @@ export default {
                 this.hasNextPage = true;
             }
 
-            let url = "/api/v1/gpon/addresses/end3";
-            if (this.fromAddressID) {
-                url += "?address_id=" + this.fromAddressID;
-            }
-
             this.isLoading = true;
-            api.get(url, {
-                params: {
+            try {
+                const page = await getEnd3Addresses({
                     page: this.nextPage,
                     page_size: this.pageSize,
                     search: this.searchQuery || undefined,
-                },
-            })
-                .then((resp) => {
-                    const results = Array.from(resp.data.results || []);
-                    this.availableList = [...this.availableList, ...results];
-                    this.hasNextPage = Boolean(resp.data.next);
-                    this.nextPage += 1;
-                })
-                .catch((reason) => {
-                    this.error.status = getErrorStatus(reason);
-                    this.error.message = errorFmt(reason);
-                })
-                .finally(() => {
-                    this.isLoading = false;
+                    address_id: this.fromAddressID ?? undefined,
                 });
+                this.availableList = [...this.availableList, ...page.results];
+                this.hasNextPage = Boolean(page.next);
+                this.nextPage += 1;
+            } catch (reason) {
+                this.error.status = getErrorStatus(reason) ?? null;
+                this.error.message = errorFmt(reason);
+            } finally {
+                this.isLoading = false;
+            }
         },
-        onFilter(event) {
+        /** Restarts loading after the search filter changes. */
+        onFilter(event: GponFilterEvent): void {
             this.searchQuery = (event.value || "").trim();
             if (this.debounceTimer) clearTimeout(this.debounceTimer);
             this.debounceTimer = setTimeout(() => {
                 this.loadConnections({ reset: true });
             }, 250);
         },
-        onLazyLoad(event) {
+        /** Loads the next page near the end of the virtual list. */
+        onLazyLoad(event?: GponLazyLoadEvent): void {
             if (!event) return;
             const remaining = this.availableList.length - event.last;
             if (remaining <= 5) {
                 this.loadConnections();
             }
         },
-        getFullAddress(sr) {
+        /** Formats an endpoint for display in the selector. */
+        getFullAddress(sr: End3WithCapability): string {
             if (!sr.address) return "НЕТ АДРЕСА";
             let address = formatAddress(sr.address);
             address += ` Локация: ${sr.location}. Кол-во портов: ${sr.capacity}`;

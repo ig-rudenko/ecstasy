@@ -56,12 +56,14 @@
     </Select>
 </template>
 
-<script>
+<script lang="ts">
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 
 import Asterisk from "./Asterisk.vue";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getEnd3TechData } from "@/services/gpon";
+import type { PropType } from "vue";
+import type { End3Type, End3WithCapability, TechCapability } from "@/types/gpon";
 import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
 export default {
@@ -72,22 +74,26 @@ export default {
     },
     emits: ["change"],
     props: {
-        type: { required: true, type: String },
-        getFrom: { required: true, type: Object },
+        type: { required: true, type: String as PropType<End3Type> },
+        getFrom: { required: true, type: Object as PropType<End3WithCapability> },
         end3ID: { required: true, type: Number },
-        init: { required: false, default: null },
+        init: {
+            required: false,
+            type: Object as PropType<Pick<TechCapability, "number" | "status"> | null>,
+            default: null,
+        },
         onlyUnusedPorts: { required: false, type: Boolean, default: false },
         valid: { required: false, type: Boolean, default: true },
     },
 
     data() {
         return {
-            selectedPort: null,
-            _capability: [],
-            _initEnd3ID: null,
+            selectedPort: null as Pick<TechCapability, "number" | "status"> | null,
+            _capability: [] as TechCapability[],
+            _initEnd3ID: null as number | null,
             error: {
-                status: null,
-                message: null,
+                status: null as number | string | null,
+                message: null as string | null,
             },
         };
     },
@@ -123,16 +129,19 @@ export default {
         },
     },
     methods: {
-        fiberInfo(number) {
+        /** Returns display metadata for a riser fiber number. */
+        fiberInfo(number: number): ReturnType<typeof getRizerFiberInfo> {
             return getRizerFiberInfo(number);
         },
-        getPorts() {
-            api.get("/api/v1/gpon/tech-data/end3/" + this.end3ID)
-                .then((resp) => (this._capability = Array.from(resp.data.capability)))
-                .catch((reason) => {
-                    this.error.status = getErrorStatus(reason);
-                    this.error.message = errorFmt(reason);
-                });
+        /** Loads ports of the selected splitter or riser. */
+        async getPorts(): Promise<void> {
+            try {
+                const end3 = await getEnd3TechData(this.end3ID);
+                this._capability = end3.capability;
+            } catch (reason) {
+                this.error.status = getErrorStatus(reason) ?? null;
+                this.error.message = errorFmt(reason);
+            }
         },
     },
 };

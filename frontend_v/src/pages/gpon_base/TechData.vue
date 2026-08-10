@@ -46,22 +46,23 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import TechDataTable from "./components/TechDataTable.vue";
 import CheckTechCapability from "@/pages/gpon_base/components/CheckTechCapability.vue";
 
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { getGponPermissions, getTechDataList, hasGponPermissions } from "@/services/gpon";
+import type { GponPaginatedResponse, TechDataListItem, TechDataListQuery } from "@/types/gpon";
 
 export default {
     name: "Gpon_base.vue",
     components: { CheckTechCapability, TechDataTable },
     data() {
         return {
-            gponTechData: null,
-            errorStatus: null,
-            errorMessage: null,
-            userPermissions: [],
+            gponTechData: null as GponPaginatedResponse<TechDataListItem> | null,
+            errorStatus: null as number | string | null,
+            errorMessage: null as string | null,
+            userPermissions: [] as string[],
             listQuery: {
                 page: 1,
                 page_size: 10,
@@ -77,35 +78,32 @@ export default {
         };
     },
     mounted() {
-        api.get("/api/v1/gpon/permissions").then((resp) => {
-            this.userPermissions = resp.data;
+        getGponPermissions().then((permissions) => {
+            this.userPermissions = permissions;
         });
 
         this.fetchTechData();
     },
     computed: {
         hasPermissionsToCreate() {
-            return ["gpon.add_oltstate", "gpon.add_houseoltstate", "gpon.add_houseb", "gpon.add_end3"].every((elem) => {
-                return this.userPermissions.includes(elem);
-            });
+            return hasGponPermissions(this.userPermissions, [
+                "gpon.add_oltstate",
+                "gpon.add_houseoltstate",
+                "gpon.add_houseb",
+                "gpon.add_end3",
+            ]);
         },
     },
     methods: {
-        fetchTechData(payload = {}) {
-            this.listQuery = {
-                ...this.listQuery,
-                ...payload,
-            };
-            api.get("/api/v1/gpon/tech-data", {
-                params: this.listQuery,
-            })
-                .then((resp) => {
-                    this.gponTechData = resp.data;
-                })
-                .catch((reason) => {
-                    this.errorStatus = getErrorStatus(reason);
-                    this.errorMessage = errorFmt(reason);
-                });
+        /** Loads technical data with the current table filters. */
+        async fetchTechData(payload: Partial<TechDataListQuery> = {}): Promise<void> {
+            this.listQuery = { ...this.listQuery, ...payload };
+            try {
+                this.gponTechData = await getTechDataList(this.listQuery);
+            } catch (reason) {
+                this.errorStatus = getErrorStatus(reason) ?? null;
+                this.errorMessage = errorFmt(reason);
+            }
         },
     },
 };

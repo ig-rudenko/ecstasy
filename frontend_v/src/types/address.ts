@@ -4,7 +4,7 @@ export interface Address {
     planStructure: string;
     street: string;
     house: string;
-    block: number;
-    floor: number;
-    apartment: number;
+    block: number | null;
+    floor?: number | null;
+    apartment?: number | null;
 }

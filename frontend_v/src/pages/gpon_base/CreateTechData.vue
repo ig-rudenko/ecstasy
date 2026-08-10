@@ -96,7 +96,7 @@
                     <AddressGetCreate :is-mobile="isMobile" :data="formData.houseB" />
 
                     <div
-                        v-if="formData.houseB.address && formData.houseB.address.building_type === 'building'"
+                        v-if="formData.houseB.address && formData.houseB.address?.building_type === 'building'"
                         class="w-100 py-2"
                     >
                         <div class="p-2">Задействованные подъезды в доме для данного OLT порта</div>
@@ -123,7 +123,10 @@
 
             <!-- THIRD STEP -->
             <div v-else-if="current_step === 3" class="p-4">
-                <div v-if="formData.houseB.buildType() === 'house'" class="flex justify-center flex-col gap-2">
+                <div
+                    v-if="formData.houseB.address?.building_type === 'house'"
+                    class="flex justify-center flex-col gap-2"
+                >
                     <Message icon="pi pi-info-circle" class="text-center w-fit self-center">
                         Возможно для данного частного дома уже имеется сплиттер
                     </Message>
@@ -145,7 +148,7 @@
 
                 <!-- Выбор сплиттера или райзера -->
                 <div class="flex">
-                    <div v-if="formData.houseB.buildType() === 'building'" class="py-3 me-4">
+                    <div v-if="formData.houseB.address?.building_type === 'building'" class="py-3 me-4">
                         <div class="flex items-center py-1">
                             <RadioButton v-model="formData.end3.type" input-id="splitter" value="splitter" />
                             <label for="splitter" class="cursor-pointer"><span class="m-2">Сплиттер</span></label>
@@ -198,7 +201,7 @@
                     </div>
                 </div>
 
-                <div v-if="formData.houseB.buildType() === 'building'">
+                <div v-if="formData.houseB.address?.building_type === 'building'">
                     <End3AddForm :initial="formData.end3.list" :end3-type="formData.end3.type"></End3AddForm>
                 </div>
 
@@ -266,14 +269,14 @@
                             <td class="p-2">
                                 <div class="flex flex-wrap gap-2">
                                     <BuildingIcon
-                                        :type="formData.houseB.address.building_type"
+                                        :type="formData.houseB.address?.building_type"
                                         width="24"
                                         height="24"
                                     />
                                     <span>{{ getFullAddress(formData.houseB.address) }}</span>
-                                    <template v-if="formData.houseB.address.building_type === 'building'">
-                                        Многоквартирный дом. Количество этажей: {{ formData.houseB.address.floors }} /
-                                        Количество подъездов: {{ formData.houseB.address.total_entrances }}
+                                    <template v-if="formData.houseB.address?.building_type === 'building'">
+                                        Многоквартирный дом. Количество этажей: {{ formData.houseB.address?.floors }} /
+                                        Количество подъездов: {{ formData.houseB.address?.total_entrances }}
                                     </template>
                                     <template v-else> Частный дом. </template>
                                 </div>
@@ -285,7 +288,7 @@
                             </td>
                         </tr>
 
-                        <tr v-if="formData.houseB.address.building_type === 'building'">
+                        <tr v-if="formData.houseB.address?.building_type === 'building'">
                             <td class="p-2">Задействованные подъезды в доме для данного OLT порта</td>
                             <td class="p-2">{{ formData.houseB.entrances }}</td>
                         </tr>
@@ -481,7 +484,7 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import StepMenu from "./components/StepMenu.vue";
 import Asterisk from "./components/Asterisk.vue";
 import End3AddForm from "./components/End3AddForm.vue";
@@ -491,7 +494,25 @@ import AddressGetCreate from "./components/AddressGetCreate.vue";
 import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 import RizerFiberColorExample from "./components/RizerFiberColorExample.vue";
 
-import api from "@/services/api";
+import { createTechData, getGponDeviceNames, getGponPortNames } from "@/services/gpon";
+import type { CreateTechDataPayload, GponAddress } from "@/types/gpon";
+
+/** Validation errors returned by the technical data endpoint. */
+interface CreateTechDataErrors {
+    serverError?: string;
+    oltState?: Record<string, string[] | undefined>;
+    houseB?: {
+        address?: Record<string, string[] | undefined>;
+        entrances?: string[];
+        description?: string[];
+    };
+    end3?: {
+        type?: string[];
+        portCount?: string[];
+        existingSplitter?: string[];
+        list?: Array<Record<string, string[]>>;
+    };
+}
 import { getErrorFields, getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 
@@ -517,8 +538,8 @@ export default {
         return {
             windowWidth: window.innerWidth,
             current_step: 1,
-            _deviceNames: [],
-            _portsNames: [],
+            _deviceNames: [] as string[],
+            _portsNames: [] as string[],
             form_submitted_successfully: false,
             formState: {
                 firstStep: {
@@ -554,9 +575,6 @@ export default {
                     entrances: "",
                     description: "",
                     address: null,
-                    buildType() {
-                        return this.address?.building_type;
-                    },
                 },
                 end3: {
                     type: "splitter",
@@ -564,9 +582,9 @@ export default {
                     existingSplitter: null,
                     portCount: 8,
                 },
-            },
+            } as CreateTechDataPayload,
 
-            errors: null,
+            errors: null as CreateTechDataErrors | null,
         };
     },
     computed: {
@@ -618,8 +636,9 @@ export default {
                 ];
                 // Проходим по массиву и добавляем сообщения об ошибках
                 for (let field of fields) {
-                    if (this.errors.houseB.address[field.name]) {
-                        msg = msg + field.label + " " + this.errors.houseB.address[field.name].join("") + ". ";
+                    const fieldErrors = this.errors.houseB.address[field.name];
+                    if (fieldErrors) {
+                        msg = msg + field.label + " " + fieldErrors.join("") + ". ";
                     }
                 }
             }
@@ -678,16 +697,17 @@ export default {
             this.getPortsNames();
         },
 
-        getDeviceNames() {
-            api.get("/api/v1/gpon/devices-names").then((res) => (this._deviceNames = Array.from(res.data)));
+        /** Loads devices available for technical data creation. */
+        getDeviceNames(): void {
+            getGponDeviceNames().then((deviceNames) => (this._deviceNames = deviceNames));
         },
-        getPortsNames() {
-            api.get("/api/v1/gpon/ports-names/" + this.formData.oltState.deviceName).then(
-                (res) => (this._portsNames = Array.from(res.data))
-            );
+        /** Loads ports of the selected device. */
+        getPortsNames(): void {
+            getGponPortNames(this.formData.oltState.deviceName).then((portNames) => (this._portsNames = portNames));
         },
 
-        stepIsValid() {
+        /** Validates the currently visible wizard step. */
+        stepIsValid(): boolean {
             if (this.current_step === 1) {
                 this.formState.firstStep.deviceName.valid = this.formData.oltState.deviceName.length > 0;
                 this.formState.firstStep.devicePort.valid = this.formData.oltState.devicePort.length > 0;
@@ -707,9 +727,10 @@ export default {
                 // Если выбран существующий сплиттер (только для частного дома) или имеются новые сплиттер/райзер
                 // А также кол-во валидных сплиттер/райзер равно их общему кол-ву
                 this.formState.thirdStep.end3Valid =
-                    (hasExistingSplitterID || validCount) && validCount === totalEnd3Count;
+                    Boolean(hasExistingSplitterID || validCount) && validCount === totalEnd3Count;
                 return this.formState.thirdStep.isValid();
             }
+            return false;
         },
 
         nextStep() {
@@ -719,22 +740,22 @@ export default {
             if (this.current_step > 1) this.current_step--;
         },
 
-        getFullAddress(address) {
+        /** Formats a GPON address for the confirmation step. */
+        getFullAddress(address: GponAddress | null): string {
             return formatAddress(address);
         },
 
-        submitForm() {
-            api.post("/api/v1/gpon/tech-data", this.formData)
-                .then((resp) => {
-                    if (resp.status === 201) {
-                        this.form_submitted_successfully = true;
-                        this.errors = null;
-                    }
+        /** Submits the completed technical data wizard. */
+        submitForm(): void {
+            createTechData(this.formData)
+                .then(() => {
+                    this.form_submitted_successfully = true;
+                    this.errors = null;
                 })
                 .catch((reason) => {
                     const status = getErrorStatus(reason);
                     if (status === 400) {
-                        this.errors = getErrorFields(reason);
+                        this.errors = getErrorFields(reason) as unknown as CreateTechDataErrors;
                     } else if (status && status >= 500) {
                         this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${status}` };
                     }

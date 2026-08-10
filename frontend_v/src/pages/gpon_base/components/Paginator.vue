@@ -87,13 +87,25 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
+import type { PropType } from "vue";
+
+/** State used by the legacy local GPON paginator. */
+interface LegacyPaginator {
+    max_pages: number;
+    pages: {
+        rows_per_page: number;
+    };
+    limit_offset: number;
+    current_page: number;
+}
+
 export default {
     name: "Paginator.vue",
     props: {
         paginator: {
             required: true,
-            type: Object,
+            type: Object as PropType<LegacyPaginator>,
             // max_pages: 0,
             // pages: {
             //   rows_per_page: 10
@@ -113,7 +125,7 @@ export default {
 
     computed: {
         rows_per_page: {
-            set: function (value) {
+            set: function (value: number | string) {
                 const new_value = Number(value);
                 if (new_value) {
                     this.paginator.pages.rows_per_page = new_value;

@@ -63,7 +63,6 @@
                             :virtualScrollerOptions="{ itemSize: 38 }"
                             @change="portHasChanged"
                             class="rounded-2xl"
-                            optionLabel="name"
                             placeholder="Выберите порт"
                         >
                             <template #value="slotProps">
@@ -79,7 +78,7 @@
 
                 <br />
 
-                <div v-if="formData.techData.devicePort">
+                <div v-if="formData.techData.deviceName && formData.techData.devicePort">
                     <!-- ПОИСК ВСЕХ ДОМОВ ДЛЯ ВЫБРАННОГО OLT ПОРТА -->
                     <AddressGetCreate
                         @change="addressHasChanged"
@@ -128,7 +127,7 @@
                             }
                         "
                         :get-from="formData.techData.end3"
-                        :type="formData.techData.end3.type"
+                        :type="formData.techData.end3?.type"
                         :only-unused-ports="true"
                     >
                     </SelectSplitterRizerPort>
@@ -260,7 +259,7 @@
                             Транзит
                             <Asterisk />
                         </div>
-                        <InputText
+                        <InputNumber
                             v-model.number="formData.transit"
                             @change="() => (formState.secondStep.transit.valid = true)"
                             :class="!formState.secondStep.transit.valid ? 'p-invalid' : ''"
@@ -344,7 +343,7 @@
                             ONT ID
                             <Asterisk />
                         </div>
-                        <InputText
+                        <InputNumber
                             v-model.number="formData.ont_id"
                             type="number"
                             style="width: 100%"
@@ -383,12 +382,7 @@
                     </div>
                     <div class="input-part">
                         <div class="px-2 pb-2">Номер наряда</div>
-                        <InputText
-                            v-model.number="formData.order"
-                            type="number"
-                            style="width: 100%"
-                            class="rounded-2xl"
-                        />
+                        <InputText v-model="formData.order" type="number" style="width: 100%" class="rounded-2xl" />
                         <Message v-if="orderError" severity="error">{{ orderError }}</Message>
                     </div>
                     <div class="input-part">
@@ -449,33 +443,36 @@
                         <tr class="bg-gray-200 dark:bg-gray-700">
                             <td class="p-2">Дом</td>
                             <td class="flex items-center gap-2 p-2">
-                                <BuildingIcon :type="formData.techData.address.building_type" width="32" height="32" />
+                                <BuildingIcon :type="formData.techData.address?.building_type" width="32" height="32" />
                                 {{ getFullAddress(formData.techData.address) }}
                                 <br />
-                                <template v-if="formData.techData.address.building_type === 'building'">
-                                    Многоквартирный дом. Количество этажей: {{ formData.techData.address.floors }} /
-                                    Количество подъездов: {{ formData.techData.address.total_entrances }}
+                                <template v-if="formData.techData.address?.building_type === 'building'">
+                                    Многоквартирный дом. Количество этажей: {{ formData.techData.address?.floors }} /
+                                    Количество подъездов: {{ formData.techData.address?.total_entrances }}
                                 </template>
                                 <template v-else> Частный дом. </template>
                             </td>
                         </tr>
 
                         <tr>
-                            <td class="p-2">Существующий {{ formData.techData.end3.type }}</td>
+                            <td class="p-2">Существующий {{ formData.techData.end3?.type }}</td>
                             <td class="p-2">
-                                {{ getFullAddress(formData.techData.end3.address) }}. Локация:
-                                {{ formData.techData.end3.location }}. <br />
-                                Кол-во портов: {{ formData.techData.end3.capacity }}
+                                {{ getFullAddress(formData.techData.end3?.address ?? null) }}. Локация:
+                                {{ formData.techData.end3?.location }}. <br />
+                                Кол-во портов: {{ formData.techData.end3?.capacity }}
                             </td>
                         </tr>
 
                         <tr class="bg-gray-200 dark:bg-gray-700">
                             <td class="p-2">
-                                {{ formData.techData.end3.type === "splitter" ? "Порт сплиттера" : "Волокно райзера" }}
+                                {{ formData.techData.end3?.type === "splitter" ? "Порт сплиттера" : "Волокно райзера" }}
                             </td>
                             <td class="p-2">
-                                {{ formData.techData.end3Port.number }}
-                                <TechCapabilityBadge :status="formData.techData.end3Port.status" />
+                                {{ formData.techData.end3Port?.number }}
+                                <TechCapabilityBadge
+                                    v-if="formData.techData.end3Port"
+                                    :status="formData.techData.end3Port.status"
+                                />
                                 <Message v-if="techCapabilityError" severity="error">{{ techCapabilityError }}</Message>
                             </td>
                         </tr>
@@ -571,14 +568,14 @@
                             <td class="p-2">Адрес подключения</td>
                             <td class="p-2 flex items-center gap-2">
                                 <BuildingIcon
-                                    :type="formData.address.building_type"
+                                    :type="formData.address?.building_type"
                                     width="32"
                                     height="32"
                                 ></BuildingIcon>
                                 {{ getFullAddress(formData.address) }}
                                 <br />
-                                <template v-if="formData.address.building_type === 'building'">
-                                    {{ formData.address.floor }} этаж. Квартира: {{ formData.address.apartment }}
+                                <template v-if="formData.address?.building_type === 'building'">
+                                    {{ formData.address?.floor }} этаж. Квартира: {{ formData.address?.apartment }}
                                 </template>
                                 <template v-else>Частный дом.</template>
                                 <Message v-if="connectionAddressError" severity="error">{{
@@ -754,7 +751,7 @@
     <Footer v-if="!isModalView" />
 </template>
 
-<script>
+<script lang="ts">
 import AddressForm from "./components/AddressForm.vue";
 import AddressGetCreate from "./components/AddressGetCreate.vue";
 import Asterisk from "./components/Asterisk.vue";
@@ -767,7 +764,49 @@ import SplittersRizersFind from "./components/SplittersRizersFind.vue";
 import StepMenu from "./components/StepMenu.vue";
 import TechCapabilityBadge from "./components/TechCapabilityBadge.vue";
 
-import api from "@/services/api";
+import { createSubscriber, getGponDeviceNames, getGponPortNames } from "@/services/gpon";
+import type { PropType } from "vue";
+import type {
+    CreateSubscriberPayload,
+    CustomerType,
+    End3WithCapability,
+    GponAddress,
+    GponCustomer,
+    SubscriberTechSelection,
+    TechCapability,
+} from "@/types/gpon";
+
+/** Editable state of the subscriber creation wizard. */
+interface SubscriberFormData {
+    techData: SubscriberTechSelection;
+    customer: GponCustomer;
+    address: GponAddress | null;
+    transit: number | null;
+    order: string | null;
+    services: string[];
+    ip: string | null;
+    ont_id: number | null;
+    ont_serial: string | null;
+    ont_mac: string | null;
+    connected_at: Date | null;
+    description: string | null;
+}
+
+/** Validation errors returned by the subscriber endpoint. */
+interface SubscriberFormErrors {
+    serverError?: string;
+    ont_id?: string;
+    ont_mac?: string;
+    ont_serial?: string;
+    transit?: string;
+    order?: string;
+    ip?: string;
+    connected_at?: string;
+    address?: string;
+    services?: string;
+    tech_capability?: string;
+    customer?: Partial<Record<keyof GponCustomer, string>>;
+}
 import { getErrorFields, getErrorStatus } from "@/errorFmt";
 import { formatAddress } from "@/formats";
 import getSubscriberTypeVerbose from "@/helpers/subscribers";
@@ -793,12 +832,12 @@ export default {
         StepMenu,
     },
     props: {
-        initDeviceName: { required: false, default: null },
-        initDevicePort: { required: false, default: null },
-        initBuildingAddress: { required: false, default: null },
-        initEnd3: { required: false, default: null },
-        initEnd3Port: { required: false, default: null },
-        isModalView: { required: false, default: false },
+        initDeviceName: { required: false, type: String, default: null },
+        initDevicePort: { required: false, type: String, default: null },
+        initBuildingAddress: { required: false, type: Object as PropType<GponAddress | null>, default: null },
+        initEnd3: { required: false, type: Object as PropType<End3WithCapability | null>, default: null },
+        initEnd3Port: { required: false, type: Object as PropType<TechCapability | null>, default: null },
+        isModalView: { required: false, type: Boolean, default: false },
     },
     mounted() {
         window.addEventListener("resize", () => {
@@ -810,9 +849,9 @@ export default {
             windowWidth: window.innerWidth,
             current_step: 1,
             form_submitted_successfully: false,
-            errors: null,
-            _deviceNames: null,
-            _portsNames: null,
+            errors: null as SubscriberFormErrors | null,
+            _deviceNames: null as string[] | null,
+            _portsNames: null as string[] | null,
             formState: {
                 firstStep: {
                     deviceName: { valid: true },
@@ -897,13 +936,13 @@ export default {
                 ont_mac: null,
                 connected_at: null,
                 description: null,
-            },
+            } as SubscriberFormData,
         };
     },
     computed: {
         devicesList() {
             if (this._deviceNames == null) this.getDeviceNames();
-            return this._deviceNames;
+            return this._deviceNames ?? [];
         },
 
         isMobile() {
@@ -911,9 +950,9 @@ export default {
         },
 
         devicePortList() {
-            if (this.formData.techData.deviceName.length === 0) return [];
+            if (!this.formData.techData.deviceName) return [];
             if (this._portsNames == null) this.getPortsNames();
-            return this._portsNames;
+            return this._portsNames ?? [];
         },
 
         ontIDError() {
@@ -1003,16 +1042,19 @@ export default {
             if (this.errors && this.errors.customer && this.errors.customer.type) {
                 return this.errors.customer.type;
             }
+            return false;
         },
     },
     methods: {
-        getDeviceNames() {
-            api.get("/api/v1/gpon/devices-names").then((res) => (this._deviceNames = Array.from(res.data)));
+        /** Loads devices available for subscriber creation. */
+        getDeviceNames(): void {
+            getGponDeviceNames().then((deviceNames) => (this._deviceNames = deviceNames));
         },
-        getPortsNames() {
-            api.get("/api/v1/gpon/ports-names/" + this.formData.techData.deviceName).then(
-                (res) => (this._portsNames = Array.from(res.data))
-            );
+        /** Loads ports of the selected device. */
+        getPortsNames(): void {
+            const deviceName = this.formData.techData.deviceName;
+            if (!deviceName) return;
+            getGponPortNames(deviceName).then((portNames) => (this._portsNames = portNames));
         },
 
         end3HasChanged() {
@@ -1039,7 +1081,8 @@ export default {
             this.getPortsNames();
         },
 
-        selectedSubscriber(value) {
+        /** Copies a customer selected in the search dialog. */
+        selectedSubscriber(value: GponCustomer): void {
             this.formData.customer = value;
             this.formState.secondStep.selected = true;
         },
@@ -1055,11 +1098,13 @@ export default {
             this.formData.customer.phone = "";
         },
 
-        subscriberVerbose(type) {
+        /** Returns a localized customer type label. */
+        subscriberVerbose(type: CustomerType): string {
             return getSubscriberTypeVerbose(type);
         },
 
-        stepIsValid() {
+        /** Validates the currently visible wizard step. */
+        stepIsValid(): boolean {
             if (this.current_step === 1) {
                 this.formState.firstStep.deviceName.valid = this.formData.techData.deviceName != null;
                 this.formState.firstStep.devicePort.valid = this.formData.techData.devicePort != null;
@@ -1078,14 +1123,14 @@ export default {
                 this.formState.secondStep.companyName.valid = data.companyName != null && data.companyName.length > 2;
                 this.formState.secondStep.contract.valid = data.contract != null;
                 this.formState.secondStep.transit.valid = this.formData.transit != null;
-                this.formState.secondStep.phone.valid =
-                    !data.phone || (data.phone.match(/\d/g) && data.phone.match(/\d/g).length === 11);
+                this.formState.secondStep.phone.valid = !data.phone || data.phone.match(/\d/g)?.length === 11;
                 return this.formState.secondStep.isValid();
             } else if (this.current_step === 3) {
                 this.formState.thirdStep.ont_id.valid = this.formData.ont_id !== null;
                 this.formState.thirdStep.address.valid = this.formData.address !== null;
                 return this.formState.thirdStep.isValid();
             }
+            return false;
         },
 
         nextStep() {
@@ -1095,15 +1140,20 @@ export default {
             if (this.current_step > 1) this.current_step--;
         },
 
-        getFullAddress(address) {
+        /** Formats a GPON address for the confirmation step. */
+        getFullAddress(address: GponAddress | null): string {
             return formatAddress(address);
         },
 
-        submitForm() {
-            const data = {
+        /** Submits the completed subscriber wizard. */
+        submitForm(): void {
+            const { address, techData } = this.formData;
+            if (!address || !techData.end3Port) return;
+
+            const data: CreateSubscriberPayload = {
                 customer: this.formData.customer,
-                address: this.formData.address,
-                tech_capability: this.formData.techData.end3Port.id,
+                address,
+                tech_capability: techData.end3Port.id,
                 description: this.formData.description,
                 transit: this.formData.transit,
                 order: this.formData.order,
@@ -1112,21 +1162,19 @@ export default {
                 ont_id: this.formData.ont_id,
                 ont_serial: this.formData.ont_serial,
                 ont_mac: this.formData.ont_mac,
-                connected_at: this.formData.connected_at,
+                connected_at: this.formData.connected_at?.toISOString() ?? null,
             };
 
-            api.post("/api/v1/gpon/subscriber-data", data)
-                .then((resp) => {
-                    if (resp.status === 201) {
-                        this.form_submitted_successfully = true;
-                        this.errors = null;
-                        this.$emit("successfullyCreated");
-                    }
+            createSubscriber(data)
+                .then(() => {
+                    this.form_submitted_successfully = true;
+                    this.errors = null;
+                    this.$emit("successfullyCreated");
                 })
                 .catch((reason) => {
                     const status = getErrorStatus(reason);
                     if (status === 400) {
-                        this.errors = getErrorFields(reason);
+                        this.errors = getErrorFields(reason) as unknown as SubscriberFormErrors;
                     } else {
                         this.errors = { serverError: `Ошибка на сервере. Код ошибки: ${status}` };
                         this.$emit("failedCreated");

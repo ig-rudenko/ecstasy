@@ -93,11 +93,13 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import TechCapabilityBadge from "./TechCapabilityBadge.vue";
 import CreateSubscriberData from "../CreateSubscriberData.vue";
 import errorFmt, { getErrorStatus } from "@/errorFmt";
-import api from "@/services/api";
+import { updateTechCapability } from "@/services/gpon";
+import type { PropType } from "vue";
+import type { End3WithCapability, GponAddress, TechCapability } from "@/types/gpon";
 import { getRizerFiberInfo } from "./rizerFiberColors.ts";
 
 export default {
@@ -108,19 +110,19 @@ export default {
     },
     emits: ["changeStatus", "getInfo"],
     props: {
-        end3Object: { required: true, type: Object },
-        end3PortsArray: { required: true, type: Array },
-        userPermissions: { required: true, type: Array },
+        end3Object: { required: true, type: Object as PropType<End3WithCapability> },
+        end3PortsArray: { required: true, type: Array as PropType<TechCapability[]> },
+        userPermissions: { required: true, type: Array as PropType<string[]> },
 
         deviceName: { required: false, default: null, type: String },
         devicePort: { required: false, default: null, type: String },
-        buildingAddress: { required: false, default: null, type: Object },
+        buildingAddress: { required: false, type: Object as PropType<GponAddress | null>, default: null },
         editMode: { required: false, default: false, type: Boolean },
     },
 
     data() {
         return {
-            showCreateSubscriberDataDialog: {},
+            showCreateSubscriberDataDialog: {} as Record<number, boolean>,
         };
     },
 
@@ -142,13 +144,14 @@ export default {
     },
 
     methods: {
-        rizerFiberInfo(number) {
+        /** Returns display metadata for a riser fiber number. */
+        rizerFiberInfo(number: number): ReturnType<typeof getRizerFiberInfo> {
             return getRizerFiberInfo(number);
         },
         /** @param {Object} capability */
-        updateTechCapabilityStatus(capability) {
-            const data = { status: capability.status };
-            this.handleRequest(api.patch("/api/v1/gpon/tech-data/tech-capability/" + capability.id, data));
+        /** Persists a changed technical capability status. */
+        updateTechCapabilityStatus(capability: TechCapability): void {
+            this.handleRequest(updateTechCapability(capability));
             this.$emit("changeStatus", capability.status);
         },
 
@@ -156,7 +159,7 @@ export default {
          * Обрабатывает запрос и отображает всплывающее окно с результатом ответа
          * @param {Promise} request
          */
-        handleRequest(request) {
+        handleRequest(request: Promise<unknown>): void {
             request
                 .then(() => {
                     this.$toast.add({
@@ -165,9 +168,8 @@ export default {
                         detail: "Статус был изменён",
                         life: 3000,
                     });
-                    this.editMode = false;
                 })
-                .catch((reason) => {
+                .catch((reason: unknown) => {
                     const status = getErrorStatus(reason);
                     this.$toast.add({
                         severity: "error",
@@ -178,7 +180,8 @@ export default {
                 });
         },
 
-        createdNewSubscriberConnection(portNumber) {
+        /** Closes the dialog after a subscriber connection is created. */
+        createdNewSubscriberConnection(portNumber: number): void {
             this.$emit("getInfo");
             this.showCreateSubscriberDataDialog[portNumber] = false;
             this.$toast.add({
