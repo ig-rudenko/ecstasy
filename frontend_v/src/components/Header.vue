@@ -40,6 +40,14 @@ function buildMenuItems(): MenuItem[] {
         });
     }
 
+    if (user?.isSuperuser || permissions.has("accounting.access_gathering_results")) {
+        built.push({
+            label: "Сбор данных",
+            icon: "gathering-results",
+            url: "/gathering-results",
+        });
+    }
+
     if (user?.isSuperuser || permissions.has("accounting.access_discovery")) {
         built.push({
             label: "Команды",
@@ -123,6 +131,8 @@ function getMenuIconClass(icon?: string) {
             return "pi pi-sync";
         case "discovery":
             return "pi pi-compass";
+        case "gathering-results":
+            return "pi pi-chart-bar";
         case "map":
             return "pi pi-map";
         case "search":
@@ -152,6 +162,8 @@ function getMenuIconAccent(icon?: string) {
             return "from-emerald-500/15 to-teal-500/5";
         case "discovery":
             return "from-sky-500/15 to-emerald-500/5";
+        case "gathering-results":
+            return "from-indigo-500/15 to-emerald-500/5";
         case "map":
             return "from-indigo-500/15 to-violet-500/5";
         case "search":

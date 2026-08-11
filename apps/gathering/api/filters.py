@@ -3,7 +3,43 @@ import re
 from django.db.models import Q
 from django_filters import rest_framework as rf_filters
 
-from ..models import MacAddress, Vlan, VlanPort
+from ..models import DeviceGatheringResult, GatheringTask, MacAddress, Vlan, VlanPort
+
+
+class DeviceGatheringResultFilter(rf_filters.FilterSet):
+    """Фильтры истории периодического сбора по устройству, задаче и результату."""
+
+    device_group = rf_filters.NumberFilter(field_name="device__group_id")
+    device_name = rf_filters.CharFilter(field_name="device__name", lookup_expr="icontains")
+    vendor = rf_filters.CharFilter(field_name="device__vendor", lookup_expr="iexact")
+    model = rf_filters.CharFilter(field_name="device__model", lookup_expr="iexact")
+    task_status = rf_filters.ChoiceFilter(field_name="task__status", choices=GatheringTask.Status.choices)
+    task_name = rf_filters.CharFilter(field_name="task__name", lookup_expr="exact")
+    task_started_after = rf_filters.IsoDateTimeFilter(field_name="task__started_at", lookup_expr="gte")
+    task_started_before = rf_filters.IsoDateTimeFilter(field_name="task__started_at", lookup_expr="lte")
+    result_status = rf_filters.ChoiceFilter(field_name="status", choices=DeviceGatheringResult.Status.choices)
+    result_started_after = rf_filters.IsoDateTimeFilter(field_name="started_at", lookup_expr="gte")
+    result_started_before = rf_filters.IsoDateTimeFilter(field_name="started_at", lookup_expr="lte")
+    error_type = rf_filters.CharFilter(lookup_expr="exact")
+    error_message = rf_filters.CharFilter(lookup_expr="icontains")
+
+    class Meta:
+        model = DeviceGatheringResult
+        fields = [
+            "device_group",
+            "device_name",
+            "vendor",
+            "model",
+            "task_status",
+            "task_name",
+            "task_started_after",
+            "task_started_before",
+            "result_status",
+            "result_started_after",
+            "result_started_before",
+            "error_type",
+            "error_message",
+        ]
 
 
 class MacAddressFilter(rf_filters.FilterSet):

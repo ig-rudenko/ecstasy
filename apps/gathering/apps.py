@@ -9,7 +9,15 @@ class FindDescConfig(AppConfig):
     def ready(self) -> None:
         """Подключить регистрацию периодических задач после миграций."""
 
+        from .new_permissions import create_permission
+
         post_migrate.connect(register_tasks, sender=self, weak=False, dispatch_uid="gathering.register_tasks")
+        post_migrate.connect(
+            create_permission,
+            sender=self,
+            weak=False,
+            dispatch_uid="gathering.create_permission",
+        )
 
 
 def register_tasks(*args, **kwargs) -> None:

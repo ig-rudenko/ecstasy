@@ -14,11 +14,13 @@ class Permissions {
         permissions: [],
         console: null,
     });
+    private readonly initialization: Promise<void>;
 
     constructor() {
         this.load();
 
-        api.get<PermissionResponse>("/api/v1/accounts/myself/permissions")
+        this.initialization = api
+            .get<PermissionResponse>("/api/v1/accounts/myself/permissions")
             .then((value) => {
                 const samePermissions =
                     value.data.permissions.length === this.perms.value.permissions.length &&
@@ -35,6 +37,10 @@ class Permissions {
                 await store.dispatch("auth/logout");
                 location.replace("/account/login");
             });
+    }
+
+    ready(): Promise<void> {
+        return this.initialization;
     }
 
     private save() {
@@ -66,6 +72,10 @@ class Permissions {
         return this.has("accounting.access_bulk_device_cmd");
     }
 
+    hasGatheringResultAccessPermission(): boolean {
+        return this.has("accounting.access_gathering_results");
+    }
+
     getAll(): string[] {
         return [...this.perms.value.permissions];
     }
@@ -74,6 +84,11 @@ class Permissions {
         return [
             { key: "console", label: "Консоль", enabled: this.hasConsoleAccess() },
             { key: "discovery", label: "Discovery", enabled: this.has("accounting.access_discovery") },
+            {
+                key: "gathering_results",
+                label: "Результаты сбора",
+                enabled: this.has("accounting.access_gathering_results"),
+            },
             { key: "maps", label: "Карты", enabled: this.has("accounting.can_view_maps") },
             { key: "interfaces", label: "Интерфейсы", enabled: this.has("accounting.access_desc_search") },
             { key: "traceroute", label: "Трассировка", enabled: this.has("accounting.access_traceroute") },

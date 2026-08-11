@@ -8,12 +8,62 @@ from unfold.contrib.filters.admin import RangeDateTimeFilter, RelatedDropdownFil
 
 from ecstasy_project.admin_filters import distinct_dropdown_filter
 
-from .models import MacAddress, Vlan, VlanPort
+from .models import DeviceGatheringResult, GatheringTask, MacAddress, Vlan, VlanPort
 from .paginator import CachedLargeTablePaginator, LargeTablePaginator
 
 VlanDropdownFilter = distinct_dropdown_filter("vlan", "vlan", use_cache=True)
 TypeDropdownFilter = distinct_dropdown_filter("type", "type", use_cache=True)
 PortDropdownFilter = distinct_dropdown_filter("port", "port", use_cache=True)
+TaskNameDropdownFilter = distinct_dropdown_filter("name", "task name", use_cache=True)
+ErrorTypeDropdownFilter = distinct_dropdown_filter("error_type", "error type", use_cache=True)
+
+
+class GatheringLogAdminMixin:
+    """Сделать автоматически создаваемые журналы неизменяемыми через admin."""
+
+    def get_readonly_fields(self, request, obj=None):
+        """Показать все поля модели только для чтения."""
+
+        return [field.name for field in self.model._meta.fields]
+
+    def has_add_permission(self, request) -> bool:
+        """Запретить ручное создание записей журнала."""
+
+        return False
+
+    def has_change_permission(self, request, obj=None) -> bool:
+        """Запретить изменение автоматически записанной истории."""
+
+        return False
+
+
+@admin.register(GatheringTask)
+class GatheringTaskAdmin(GatheringLogAdminMixin, ModelAdmin):
+    """Администрирование запусков периодического сбора."""
+
+    list_display = ["name", "task_id", "status", "total_devices", "started_at", "finished_at"]
+    search_fields = ["task_id", "name", "error_type", "error_message"]
+    list_filter = [TaskNameDropdownFilter, "status", ("started_at", RangeDateTimeFilter)]
+    list_filter_submit = True
+    list_per_page = 50
+
+
+@admin.register(DeviceGatheringResult)
+class DeviceGatheringResultAdmin(GatheringLogAdminMixin, ModelAdmin):
+    """Администрирование результатов периодического сбора по устройствам."""
+
+    list_display = ["device", "task", "status", "error_type", "started_at", "finished_at"]
+    search_fields = ["device__name", "device__ip", "task__name", "error_type", "error_message"]
+    list_select_related = ["device", "task"]
+    list_filter = [
+        ("task", RelatedDropdownFilter),
+        ("device", RelatedDropdownFilter),
+        "status",
+        ErrorTypeDropdownFilter,
+        ("started_at", RangeDateTimeFilter),
+    ]
+    list_filter_submit = True
+    list_per_page = 50
 
 
 @admin.register(MacAddress)

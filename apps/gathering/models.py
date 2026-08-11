@@ -34,6 +34,11 @@ class GatheringTask(models.Model):
             models.Index(fields=("finished_at",), name="gath_task_finished_idx"),
         ]
 
+    def __str__(self) -> str:
+        """Вернуть понятное представление запуска для admin."""
+
+        return f"{self.name} ({self.started_at:%Y-%m-%d %H:%M:%S})"
+
 
 class DeviceGatheringResult(models.Model):
     """Результат опроса одного устройства в рамках задачи сбора."""
@@ -64,6 +69,11 @@ class DeviceGatheringResult(models.Model):
         constraints = [
             models.UniqueConstraint(fields=("task", "device"), name="uniq_gath_task_device"),
         ]
+
+    def __str__(self) -> str:
+        """Вернуть понятное представление результата для admin."""
+
+        return f"{self.device.name}: {self.task.name} — {self.status}"
 
 
 class MacAddress(models.Model):
