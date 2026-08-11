@@ -14,7 +14,7 @@ import type {
 import permissions from "@/services/permissions.ts";
 import { useRouter } from "vue-router";
 
-const pageSize = 50;
+const pageSize = 10;
 const lookups = ref<GatheringResultLookups>({
     device_groups: [],
     vendors: [],
@@ -40,7 +40,7 @@ const runningCount = computed(() => rows.value.filter((result) => result.status 
 
 function createDefaultFilters(): GatheringResultFilters {
     const resultStartedAfter = new Date();
-    resultStartedAfter.setDate(resultStartedAfter.getDate() - 1);
+    resultStartedAfter.setHours(resultStartedAfter.getHours() - 1);
     return {
         deviceGroup: null,
         deviceName: "",
@@ -164,7 +164,6 @@ function statusSeverity(status: GatheringResultStatus | GatheringTaskStatus) {
 
 onMounted(async () => {
     if (!permissions.hasGatheringResultAccessPermission()) await useRouter().push("/");
-    await refresh();
 });
 </script>
 
@@ -265,9 +264,21 @@ onMounted(async () => {
                     :loading="loading"
                     dataKey="id"
                     scrollable
-                    scrollHeight="34rem"
                     class="text-xs sm:text-base"
                     @row-click="showDetails($event.data)"
+                    stripedRows
+                    :pt="{
+                        column: {
+                            headerCell: {
+                                class: 'bg-gray-50/90 dark:bg-gray-900/80 text-xs uppercase text-gray-500 dark:text-gray-400',
+                            },
+                        },
+                        pcPaginator: {
+                            root: {
+                                class: 'border-t border-gray-200/80 dark:border-gray-700/80 bg-white/60 dark:bg-gray-900/50',
+                            },
+                        },
+                    }"
                 >
                     <Column header="Оборудование" style="min-width: 13rem">
                         <template #body="{ data }">

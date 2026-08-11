@@ -101,9 +101,9 @@ class MacTablesGatherTask(ThreadUpdatedStatusDeviceTask):
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор MAC адресов",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор MAC адресов",
                 "crontab": crontab,
                 "enabled": False,
             },
@@ -177,9 +177,9 @@ class VlanTablesGatherTask(ThreadUpdatedStatusDeviceTask):
             hour="2,6,10,14,18,22",  # Сбор через каждые 4 часа
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор VLAN таблиц",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор VLAN таблиц",
                 "crontab": crontab,
                 "enabled": False,
             },
@@ -217,9 +217,9 @@ class ConfigurationGatherTask(ThreadUpdatedStatusDeviceTask):
             hour="4",
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор файлов конфигураций",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор файлов конфигураций",
                 "crontab": crontab,
                 "enabled": False,
             },
@@ -307,9 +307,9 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusDeviceTask):
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )
         PeriodicTask.objects.get_or_create(
-            name="Комплексный сбор данных оборудования",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Комплексный сбор данных оборудования",
                 "crontab": crontab,
                 "enabled": False,
             },

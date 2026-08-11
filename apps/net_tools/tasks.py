@@ -52,9 +52,9 @@ class InterfacesScanTask(ThreadUpdatedStatusDeviceTask):
             hour="*/2",
         )
         PeriodicTask.objects.get_or_create(
-            name="Опрос интерфейсов оборудования",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Опрос интерфейсов оборудования",
                 "crontab": crontab,
                 "enabled": False,
             },

@@ -19,6 +19,7 @@ const emit = defineEmits<{
     select: [result: DeviceGatheringResult];
 }>();
 
+const isFullscreen = ref(false);
 const container = ref<HTMLElement | null>(null);
 let timeline: Timeline | null = null;
 
@@ -37,6 +38,13 @@ function escapeHtml(value: string): string {
     const element = document.createElement("div");
     element.textContent = value;
     return element.innerHTML;
+}
+
+async function toggleFullscreen(): Promise<void> {
+    isFullscreen.value = !isFullscreen.value;
+    await nextTick();
+    timeline?.setOptions({ height: isFullscreen.value ? "100%" : "460px" });
+    requestAnimationFrame(() => timeline?.redraw());
 }
 
 function renderTimeline(): void {
@@ -64,7 +72,7 @@ function renderTimeline(): void {
         type: "range",
     }));
     const options: TimelineOptions = {
-        height: "460px",
+        height: isFullscreen.value ? "100%" : "460px",
         stack: true,
         selectable: true,
         showCurrentTime: true,
@@ -97,51 +105,74 @@ onBeforeUnmount(() => timeline?.destroy());
 </script>
 
 <template>
-    <div>
-        <div class="not-sm:px-4 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Временная шкала опросов</h2>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Строки — оборудование, ширина блока — длительность опроса. Масштабирование: Ctrl + колесо.
-                    Перемещение графика вверх/вниз для просмотра другого оборудования
-                </p>
-            </div>
-            <Select
-                :modelValue="taskName"
-                :options="taskNameOptions"
-                optionLabel="label"
-                optionValue="value"
-                class="w-full md:w-72 rounded-2xl"
-                aria-label="Имя периодической задачи"
-                @update:modelValue="emit('update:taskName', $event)"
-            />
-        </div>
-
-        <Message v-if="truncated" severity="warn" :closable="false" class="mb-3">
-            На графике показаны первые 5000 результатов. Сузьте временной диапазон или фильтры.
-        </Message>
-
-        <div class="relative min-h-80">
+    <Teleport to="body" :disabled="!isFullscreen">
+        <div :class="{ 'fixed inset-0 z-100': isFullscreen }">
             <div
-                v-if="loading"
-                class="absolute inset-0 z-10 flex items-center justify-center sm:rounded-2xl bg-white/70 backdrop-blur-sm dark:bg-gray-900/70"
+                :class="{
+                    'absolute top-0 left-0 flex h-full w-full flex-col overflow-hidden bg-white p-4 dark:bg-gray-900':
+                        isFullscreen,
+                }"
             >
-                <ProgressSpinner class="h-10! w-10!" />
+                <div class="not-sm:px-4 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Временная шкала опросов</h2>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Строки — оборудование, ширина блока — длительность опроса. Масштабирование: Ctrl + колесо.
+                            Перемещение графика вверх/вниз для просмотра другого оборудования
+                        </p>
+                    </div>
+                    <div class="flex w-full items-center gap-2 md:w-auto">
+                        <Select
+                            :modelValue="taskName"
+                            :options="taskNameOptions"
+                            optionLabel="label"
+                            placeholder="Все задачи"
+                            optionValue="value"
+                            class="min-w-0 flex-1 rounded-2xl md:w-72"
+                            aria-label="Имя периодической задачи"
+                            @update:modelValue="emit('update:taskName', $event)"
+                        />
+                        <Button
+                            :icon="isFullscreen ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center' : 'pi pi-expand'"
+                            severity="secondary"
+                            outlined
+                            rounded
+                            :aria-label="
+                                isFullscreen ? 'Выйти из полноэкранного режима' : 'Развернуть график на весь экран'
+                            "
+                            @click="toggleFullscreen"
+                        />
+                    </div>
+                </div>
+
+                <Message v-if="truncated" severity="warn" :closable="false" class="mb-3">
+                    На графике показаны первые 5000 результатов. Сузьте временной диапазон или фильтры.
+                </Message>
+
+                <div class="relative min-h-80" :class="{ 'min-h-0 flex-1': isFullscreen }">
+                    <div
+                        v-if="loading"
+                        class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm sm:rounded-2xl dark:bg-gray-900/70"
+                    >
+                        <ProgressSpinner class="h-10! w-10!" />
+                    </div>
+                    <div
+                        v-if="!loading && results.length === 0"
+                        class="flex min-h-80 flex-col items-center justify-center border-dashed border-gray-300 text-gray-500 sm:rounded-2xl sm:border dark:border-gray-700 dark:text-gray-400"
+                    >
+                        <i class="pi pi-chart-bar mb-3 text-3xl" />
+                        Нет опросов для выбранных фильтров
+                    </div>
+                    <div
+                        v-show="results.length > 0"
+                        ref="container"
+                        class="gathering-timeline overflow-hidden sm:rounded-2xl"
+                        :class="{ 'h-full': isFullscreen }"
+                    />
+                </div>
             </div>
-            <div
-                v-if="!loading && results.length === 0"
-                class="flex min-h-80 flex-col items-center justify-center sm:rounded-2xl sm:border border-dashed border-gray-300 text-gray-500 dark:border-gray-700 dark:text-gray-400"
-            >
-                <i class="pi pi-chart-bar mb-3 text-3xl" />
-                Нет опросов для выбранных фильтров
-            </div>
-            <div
-                v-show="results.length > 0"
-                ref="container"
-                class="gathering-timeline overflow-hidden sm:rounded-2xl"
-            />
         </div>
-    </div>
+    </Teleport>
 </template>
 
 <style scoped>
@@ -155,6 +186,7 @@ onBeforeUnmount(() => timeline?.destroy());
 :deep(.vis-labelset .vis-label),
 :deep(.vis-time-axis .vis-text) {
     color: var(--primary);
+    font-size: 0.75rem;
 }
 
 :deep(.vis-item.gathering-result) {

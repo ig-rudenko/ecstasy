@@ -43,9 +43,9 @@ def register_tasks(*args, **kwargs) -> None:
 
     crontab = get_crontab_schedule(minute="30", hour="4")
     PeriodicTask.objects.get_or_create(
-        name="Очистка старых результатов опроса оборудования",
+        task=cleanup_gathering_tasks_task.name,
         defaults={
-            "task": cleanup_gathering_tasks_task.name,
+            "name": "Очистка старых результатов опроса оборудования",
             "crontab": crontab,
             "kwargs": '{"retention_days": 14}',
             "enabled": True,

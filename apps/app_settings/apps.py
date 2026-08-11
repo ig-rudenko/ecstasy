@@ -26,17 +26,17 @@ def register_task(*args, **kwargs) -> None:
 
     crontab = get_crontab_schedule(minute="0", hour="4")
     PeriodicTask.objects.get_or_create(
-        name="Очистка истёкших JWT",
+        task=flush_expired_tokens.name,
         defaults={
-            "task": flush_expired_tokens.name,
+            "name": "Очистка истёкших JWT",
             "crontab": crontab,
             "enabled": True,
         },
     )
     PeriodicTask.objects.get_or_create(
-        name="Очистка истёкших Cookies",
+        task=flush_expired_cookie_sessions.name,
         defaults={
-            "task": flush_expired_cookie_sessions.name,
+            "name": "Очистка истёкших Cookies",
             "crontab": crontab,
             "enabled": True,
         },

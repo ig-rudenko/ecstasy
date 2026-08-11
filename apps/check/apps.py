@@ -14,9 +14,9 @@ def register_task(*args, **kwargs) -> None:
         hour="3",
     )
     PeriodicTask.objects.get_or_create(
-        name="Синхронизация координат оборудования с Zabbix",
+        task="sync_device_coordinates_with_zabbix_task",
         defaults={
-            "task": "sync_device_coordinates_with_zabbix_task",
+            "name": "Синхронизация координат оборудования с Zabbix",
             "crontab": crontab,
             "enabled": False,
         },
