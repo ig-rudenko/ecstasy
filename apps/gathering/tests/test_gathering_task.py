@@ -1,5 +1,6 @@
+from types import SimpleNamespace
 from typing import cast
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.db.models import QuerySet
 from django.test import SimpleTestCase, override_settings
@@ -8,6 +9,9 @@ from rest_framework import status
 from rest_framework.exceptions import APIException, NotAcceptable, ValidationError
 
 from apps.check.api.decorators import except_connection_errors
+from apps.check.models import Devices
+from apps.gathering.models import DeviceGatheringResult
+from apps.gathering.services.collectors import ThreadUpdatedStatusDeviceTask
 from ecstasy_project.error_handler import (
     PROBLEM_CONTENT_TYPE,
     PROBLEM_TYPES,
@@ -15,7 +19,6 @@ from ecstasy_project.error_handler import (
     build_problem,
     custom_exception_handler,
 )
-from ecstasy_project.task import ThreadUpdatedStatusTask
 
 
 class FakeQuerySet:
@@ -30,10 +33,10 @@ class FakeQuerySet:
         return [object()]
 
 
-class SuccessfulThreadTask(ThreadUpdatedStatusTask):
+class SuccessfulThreadTask(ThreadUpdatedStatusDeviceTask):
     """Thread task that completes successfully."""
 
-    queryset = cast(QuerySet, FakeQuerySet())
+    queryset = cast(QuerySet[Devices], FakeQuerySet())
     max_workers = 1
 
     def thread_task(self, obj, **kwargs) -> str:
@@ -41,10 +44,10 @@ class SuccessfulThreadTask(ThreadUpdatedStatusTask):
         return "ok"
 
 
-class FailingThreadTask(ThreadUpdatedStatusTask):
+class FailingThreadTask(ThreadUpdatedStatusDeviceTask):
     """Thread task that raises from the worker body."""
 
-    queryset = cast(QuerySet, FakeQuerySet())
+    queryset = cast(QuerySet[Devices], FakeQuerySet())
     max_workers = 1
 
     def thread_task(self, obj, **kwargs) -> None:
@@ -55,29 +58,41 @@ class FailingThreadTask(ThreadUpdatedStatusTask):
 class ThreadUpdatedStatusTaskTests(SimpleTestCase):
     """Tests for threaded Celery task database connection cleanup."""
 
-    @patch("ecstasy_project.task.connections.close_all")
-    @patch("ecstasy_project.task.close_old_connections")
-    def test_thread_task_closes_database_connections(self, close_old_connections, close_all) -> None:
+    @patch("apps.gathering.services.collectors.connections.close_all")
+    @patch("apps.gathering.services.collectors.close_old_connections")
+    @patch("apps.gathering.services.collectors.DeviceGatheringResult.objects.create")
+    def test_thread_task_closes_database_connections(
+        self, create_result, close_old_connections, close_all
+    ) -> None:
         """Thread worker closes its Django DB connection after successful work."""
         task = SuccessfulThreadTask()
+        device = SimpleNamespace(name="switch", ip="192.0.2.10")
 
-        result = task._run_thread_task(object())
+        result = task._run_thread_task(device, MagicMock())  # type: ignore[arg-type]
 
         self.assertEqual(result, "ok")
+        create_result.return_value.save.assert_called_once_with(
+            update_fields=["status", "error_type", "error_message", "finished_at"]
+        )
         close_old_connections.assert_called_once_with()
         close_all.assert_called_once_with()
 
-    @patch("ecstasy_project.task.connections.close_all")
-    @patch("ecstasy_project.task.close_old_connections")
+    @patch("apps.gathering.services.collectors.connections.close_all")
+    @patch("apps.gathering.services.collectors.close_old_connections")
+    @patch("apps.gathering.services.collectors.DeviceGatheringResult.objects.create")
     def test_thread_task_closes_database_connections_after_error(
-        self, close_old_connections, close_all
+        self, create_result, close_old_connections, close_all
     ) -> None:
-        """Thread worker closes its Django DB connection after failed work."""
+        """Thread worker logs an error and closes its Django DB connection."""
         task = FailingThreadTask()
+        device = SimpleNamespace(name="switch", ip="192.0.2.10")
 
-        with self.assertRaises(RuntimeError):
-            task._run_thread_task(object())
+        with patch.object(task, "log_error"):
+            result = task._run_thread_task(device, MagicMock())  # type: ignore[arg-type]
 
+        self.assertEqual(result, DeviceGatheringResult.Status.FAILURE)
+        self.assertEqual(create_result.return_value.error_type, "RuntimeError")
+        self.assertEqual(create_result.return_value.error_message, "boom")
         close_old_connections.assert_called_once_with()
         close_all.assert_called_once_with()
 

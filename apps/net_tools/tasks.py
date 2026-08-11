@@ -7,13 +7,14 @@ from pyzabbix.api import logger
 
 from apps.check.models import Devices as ModelDevices
 from apps.check.services.device.interfaces_collector import DeviceDBSynchronizer
+from apps.gathering.models import DeviceGatheringResult
+from apps.gathering.services.collectors import ThreadUpdatedStatusDeviceTask
 from devicemanager.device import DeviceManager
 from ecstasy_project.celery import app
 from ecstasy_project.celery_schedules import get_crontab_schedule
-from ecstasy_project.task import ThreadUpdatedStatusTask
 
 
-class InterfacesScanTask(ThreadUpdatedStatusTask):
+class InterfacesScanTask(ThreadUpdatedStatusDeviceTask):
     max_workers = 80
     name = "interfaces_scan"
     queryset = ModelDevices.objects.filter(active=True, collect_interfaces=True)
@@ -23,27 +24,26 @@ class InterfacesScanTask(ThreadUpdatedStatusTask):
         logger.setLevel(logging.ERROR)
         cache.set("periodically_scan_id", self.request.id, timeout=None)
 
-    def thread_task(self, obj: ModelDevices, **kwargs):
+    def thread_task(self, obj: ModelDevices, **kwargs) -> str:
+        """Собрать интерфейсы устройства и вернуть статус результата."""
+
         if not obj.available:
             # Если оборудование недоступно, то пропускаем
-            return
+            return DeviceGatheringResult.Status.SKIPPED
 
-        try:
-            synchronizer = DeviceDBSynchronizer(
-                device=obj,
-                device_collector=DeviceManager.from_model(obj),
-                with_vlans=True,
-            )
+        synchronizer = DeviceDBSynchronizer(
+            device=obj,
+            device_collector=DeviceManager.from_model(obj),
+            with_vlans=True,
+        )
 
-            synchronizer.collect_current_interfaces(make_session_global=False)
-            synchronizer.sync_device_info_to_db()
-            synchronizer.device_collector.push_zabbix_inventory()
-            synchronizer.save_interfaces_to_db()
-            self.log(device=self.device_log_format(obj), message="Интерфейсы успешно обновлены")
-        except Exception as exc:
-            self.log_error(device=self.device_log_format(obj), message=exc)
+        synchronizer.collect_current_interfaces(make_session_global=False)
+        synchronizer.sync_device_info_to_db()
+        synchronizer.device_collector.push_zabbix_inventory()
+        synchronizer.save_interfaces_to_db()
+        self.log(device=obj, message="Интерфейсы успешно обновлены")
 
-        self.update_state()
+        return DeviceGatheringResult.Status.SUCCESS
 
     @classmethod
     def register_task(cls):
