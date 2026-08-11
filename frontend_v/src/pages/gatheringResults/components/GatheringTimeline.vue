@@ -98,11 +98,12 @@ onBeforeUnmount(() => timeline?.destroy());
 
 <template>
     <div>
-        <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="not-sm:px-4 mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Временная шкала опросов</h2>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Строки — оборудование, ширина блока — длительность опроса. Масштабирование: Ctrl + колесо.
+                    Перемещение графика вверх/вниз для просмотра другого оборудования
                 </p>
             </div>
             <Select
@@ -110,7 +111,7 @@ onBeforeUnmount(() => timeline?.destroy());
                 :options="taskNameOptions"
                 optionLabel="label"
                 optionValue="value"
-                class="w-full md:w-72"
+                class="w-full md:w-72 rounded-2xl"
                 aria-label="Имя периодической задачи"
                 @update:modelValue="emit('update:taskName', $event)"
             />
@@ -123,32 +124,37 @@ onBeforeUnmount(() => timeline?.destroy());
         <div class="relative min-h-80">
             <div
                 v-if="loading"
-                class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm dark:bg-gray-900/70"
+                class="absolute inset-0 z-10 flex items-center justify-center sm:rounded-2xl bg-white/70 backdrop-blur-sm dark:bg-gray-900/70"
             >
                 <ProgressSpinner class="h-10! w-10!" />
             </div>
             <div
                 v-if="!loading && results.length === 0"
-                class="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 text-gray-500 dark:border-gray-700 dark:text-gray-400"
+                class="flex min-h-80 flex-col items-center justify-center sm:rounded-2xl sm:border border-dashed border-gray-300 text-gray-500 dark:border-gray-700 dark:text-gray-400"
             >
                 <i class="pi pi-chart-bar mb-3 text-3xl" />
                 Нет опросов для выбранных фильтров
             </div>
-            <div v-show="results.length > 0" ref="container" class="gathering-timeline overflow-hidden rounded-2xl" />
+            <div
+                v-show="results.length > 0"
+                ref="container"
+                class="gathering-timeline overflow-hidden sm:rounded-2xl"
+            />
         </div>
     </div>
 </template>
 
 <style scoped>
 :deep(.vis-timeline) {
+    border-radius: 0 !important;
+    border: none !important;
     border-color: rgb(209 213 219 / 0.8);
-    border-radius: 1rem;
-    font-family: inherit;
+    font-family: monospace;
 }
 
 :deep(.vis-labelset .vis-label),
 :deep(.vis-time-axis .vis-text) {
-    color: rgb(55 65 81);
+    color: var(--primary);
 }
 
 :deep(.vis-item.gathering-result) {

@@ -43,12 +43,13 @@ const resultStatusOptions = [
                         optionLabel="name"
                         optionValue="id"
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
-                    <label for="gathering-device-group">Группа</label>
+                    <label for="gathering-device-group" class="text-xs sm:text-base">Группа</label>
                 </FloatLabel>
                 <FloatLabel variant="on">
-                    <InputText v-model="filters.deviceName" id="gathering-device-name" fluid />
+                    <InputText v-model="filters.deviceName" class="rounded-2xl" id="gathering-device-name" fluid />
                     <label for="gathering-device-name">Имя оборудования</label>
                 </FloatLabel>
                 <FloatLabel variant="on">
@@ -58,6 +59,7 @@ const resultStatusOptions = [
                         :options="lookups.vendors"
                         filter
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-vendor">Вендор</label>
@@ -69,6 +71,7 @@ const resultStatusOptions = [
                         :options="lookups.models"
                         filter
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-model">Модель</label>
@@ -81,7 +84,7 @@ const resultStatusOptions = [
         <div>
             <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
                 <i class="pi pi-clock text-indigo-600" />
-                Запуск GatheringTask
+                Фильтр периодической задачи
             </div>
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <FloatLabel variant="on">
@@ -92,6 +95,7 @@ const resultStatusOptions = [
                         optionLabel="label"
                         optionValue="value"
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-task-status">Статус запуска</label>
@@ -103,6 +107,7 @@ const resultStatusOptions = [
                         :options="lookups.task_names"
                         filter
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-task-name">Имя задачи</label>
@@ -116,6 +121,7 @@ const resultStatusOptions = [
                         hourFormat="24"
                         showButtonBar
                         fluid
+                        input-class="rounded-2xl"
                     />
                     <label for="gathering-task-after">Запуск от</label>
                 </FloatLabel>
@@ -128,6 +134,7 @@ const resultStatusOptions = [
                         hourFormat="24"
                         showButtonBar
                         fluid
+                        input-class="rounded-2xl"
                     />
                     <label for="gathering-task-before">Запуск до</label>
                 </FloatLabel>
@@ -139,7 +146,7 @@ const resultStatusOptions = [
         <div>
             <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
                 <i class="pi pi-list-check text-emerald-600" />
-                Результат DeviceGatheringResult
+                Фильтр результата периодической задачи
             </div>
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <FloatLabel variant="on">
@@ -150,6 +157,7 @@ const resultStatusOptions = [
                         optionLabel="label"
                         optionValue="value"
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-result-status">Статус результата</label>
@@ -161,6 +169,7 @@ const resultStatusOptions = [
                         :options="lookups.error_types"
                         filter
                         showClear
+                        class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-error-type">Тип ошибки</label>
@@ -173,6 +182,7 @@ const resultStatusOptions = [
                         showTime
                         hourFormat="24"
                         showButtonBar
+                        input-class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-result-after">Опрос от</label>
@@ -185,12 +195,13 @@ const resultStatusOptions = [
                         showTime
                         hourFormat="24"
                         showButtonBar
+                        input-class="rounded-2xl"
                         fluid
                     />
                     <label for="gathering-result-before">Опрос до</label>
                 </FloatLabel>
                 <FloatLabel variant="on" class="xl:col-span-2">
-                    <InputText v-model="filters.errorMessage" id="gathering-error-message" fluid />
+                    <InputText v-model="filters.errorMessage" class="rounded-2xl" id="gathering-error-message" fluid />
                     <label for="gathering-error-message">Текст ошибки</label>
                 </FloatLabel>
             </div>
@@ -203,9 +214,10 @@ const resultStatusOptions = [
                 icon="pi pi-times"
                 severity="secondary"
                 text
+                class="rounded-2xl"
                 @click="emit('reset')"
             />
-            <Button type="submit" label="Применить" icon="pi pi-filter" :loading="loading" />
+            <Button type="submit" label="Применить" class="rounded-2xl" icon="pi pi-filter" :loading="loading" />
         </div>
     </form>
 </template>

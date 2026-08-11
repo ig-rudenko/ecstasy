@@ -172,12 +172,12 @@ onMounted(async () => {
     <main class="mx-auto sm:px-6 sm:py-8 lg:px-8">
         <div class="flex flex-col gap-6">
             <section
-                class="relative overflow-hidden border-gray-200/70 bg-white/70 backdrop-blur sm:rounded-4xl sm:border sm:p-7 dark:border-gray-700/70 dark:bg-gray-900/40"
+                class="relative overflow-hidden border-gray-200/70 bg-white/70 backdrop-blur sm:rounded-4xl border-b sm:border not-sm:py-8 p-4 sm:p-7 transition hover:-translate-y-0.5 hover:bg-linear-to-br hover:from-transparent hover:via-transparent hover:to-indigo-500/10 hover:shadow-md dark:border-gray-700/70 dark:bg-gray-900/40"
             >
                 <div
                     class="pointer-events-none absolute inset-0 bg-linear-to-br from-indigo-500/10 via-transparent to-emerald-500/10"
                 />
-                <div class="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+                <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
                     <div class="flex items-center gap-4">
                         <div
                             class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-200 dark:ring-indigo-900/60"
@@ -194,7 +194,7 @@ onMounted(async () => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-3 xl:min-w-128">
+                    <div class="grid grid-cols-3 gap-3 xl:min-w-lg">
                         <div
                             class="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-4 py-3 dark:border-gray-700/80 dark:bg-gray-800/60"
                         >
@@ -223,7 +223,11 @@ onMounted(async () => {
 
             <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
 
-            <Fieldset legend="Фильтры" :toggleable="true" class="bg-white/80! dark:bg-gray-900/45!">
+            <Fieldset
+                legend="Фильтры"
+                :toggleable="true"
+                class="bg-white/80! dark:bg-gray-900/45! not-sm:border-0 not-sm:p-2 sm:rounded-3xl"
+            >
                 <GatheringResultsFilters
                     v-model="filters"
                     :lookups="lookups"
@@ -260,16 +264,15 @@ onMounted(async () => {
                     :value="rows"
                     :loading="loading"
                     dataKey="id"
-                    stripedRows
                     scrollable
                     scrollHeight="34rem"
-                    tableStyle="min-width: 76rem"
+                    class="text-xs sm:text-base"
                     @row-click="showDetails($event.data)"
                 >
-                    <Column header="Оборудование" frozen style="min-width: 13rem">
+                    <Column header="Оборудование" style="min-width: 13rem">
                         <template #body="{ data }">
                             <button class="text-left" type="button" @click.stop="showDetails(data)">
-                                <span class="block font-semibold text-indigo-700 dark:text-indigo-300">
+                                <span class="block font-semibold text-indigo-700 dark:text-indigo-300 truncate">
                                     {{ data.device.name }}
                                 </span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ data.device.ip }}</span>
@@ -378,7 +381,7 @@ onMounted(async () => {
                 :closable="false"
             >
                 <div class="font-semibold">{{ selectedResult.error_type || "Ошибка" }}</div>
-                <div class="mt-1 whitespace-pre-wrap break-words text-sm">{{ selectedResult.error_message }}</div>
+                <div class="mt-1 whitespace-pre-wrap wrap-break-word text-sm">{{ selectedResult.error_message }}</div>
             </Message>
         </div>
     </Dialog>
