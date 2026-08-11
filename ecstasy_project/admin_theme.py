@@ -202,6 +202,7 @@ def sidebar_navigation(request) -> list:
                 model_link("MAC addresses", "dns", "gathering", "macaddress", perms),
                 model_link("VLANs", "dataset", "gathering", "vlan", perms),
                 model_link("VLAN ports", "cable", "gathering", "vlanport", perms),
+                model_link("Gathering results", "dataset", "gathering", "devicegatheringresult", perms),
             ],
         },
         {
