@@ -13,3 +13,10 @@ export interface HardwareStats {
         value: number;
     };
 }
+
+export function hwStatsNotEmpty(hardwareStats: HardwareStats | null): boolean {
+    if (!hardwareStats) return false;
+    return Boolean(
+        hardwareStats.cpu?.util || hardwareStats.flash?.util || hardwareStats.ram?.util || hardwareStats.temp?.value
+    );
+}

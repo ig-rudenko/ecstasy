@@ -49,9 +49,9 @@ def register_task(*args, **kwargs) -> None:
         hour="4",
     )
     PeriodicTask.objects.get_or_create(
-        name="Очистка старых запусков discovery",
+        task=cleanup_discovery_runs_task.name,
         defaults={
-            "task": cleanup_discovery_runs_task.name,
+            "name": "Очистка старых запусков discovery",
             "crontab": crontab,
             "kwargs": '{"retention_days": 14}',
             "enabled": True,
@@ -60,9 +60,9 @@ def register_task(*args, **kwargs) -> None:
         },
     )
     PeriodicTask.objects.get_or_create(
-        name="Очистка старых discovery candidates",
+        task=cleanup_discovery_candidate_task.name,
         defaults={
-            "task": cleanup_discovery_candidate_task.name,
+            "name": "Очистка старых discovery candidates",
             "crontab": crontab,
             "kwargs": '{"retention_days": 14}',
             "enabled": False,

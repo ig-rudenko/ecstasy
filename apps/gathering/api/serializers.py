@@ -1,6 +1,61 @@
 from rest_framework import serializers
 
-from apps.gathering.models import MacAddress, Vlan, VlanPort
+from apps.gathering.models import DeviceGatheringResult, GatheringTask, MacAddress, Vlan, VlanPort
+
+
+class GatheringTaskSummarySerializer(serializers.ModelSerializer):
+    """Сериализовать запуск периодической задачи для строки результата."""
+
+    class Meta:
+        model = GatheringTask
+        fields = [
+            "id",
+            "task_id",
+            "name",
+            "status",
+            "total_devices",
+            "error_type",
+            "error_message",
+            "started_at",
+            "finished_at",
+        ]
+
+
+class GatheringResultDeviceSerializer(serializers.Serializer):
+    """Сериализовать безопасную сводку оборудования без учетных данных."""
+
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    ip = serializers.CharField(read_only=True)
+    vendor = serializers.CharField(read_only=True, allow_null=True)
+    model = serializers.CharField(read_only=True, allow_null=True)
+    group = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_group(obj) -> dict[str, int | str]:
+        """Вернуть идентификатор и название группы оборудования."""
+
+        return {"id": obj.group_id, "name": obj.group.name}
+
+
+class DeviceGatheringResultSerializer(serializers.ModelSerializer):
+    """Сериализовать результат опроса одного устройства."""
+
+    task = GatheringTaskSummarySerializer(read_only=True)
+    device = GatheringResultDeviceSerializer(read_only=True)
+
+    class Meta:
+        model = DeviceGatheringResult
+        fields = [
+            "id",
+            "task",
+            "device",
+            "status",
+            "error_type",
+            "error_message",
+            "started_at",
+            "finished_at",
+        ]
 
 
 class MacAddressSerializer(serializers.ModelSerializer):

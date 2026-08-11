@@ -17,6 +17,11 @@ const router = createRouter({
                     component: () => import("@/pages/discovery/DiscoveryPage.vue"),
                     name: "discovery",
                 },
+                {
+                    path: "gathering-results",
+                    component: () => import("@/pages/gatheringResults/GatheringResultsPage.vue"),
+                    name: "gathering-results",
+                },
                 { path: "profile", component: () => import("@/pages/profile/ProfilePage.vue"), name: "profile" },
                 {
                     path: "devices",

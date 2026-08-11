@@ -111,7 +111,7 @@ class Dlink(BaseDevice, AbstractConfigDevice, AbstractCableTestDevice):
 
     """
 
-    prompt = r"\S+#"
+    prompt = r"\S+# *$"
     space_prompt = r"\n.+?Quit.+?mSPACE.+?(?:mENTER|Refresh)"
     mac_format = create_mac_regexp("00-11-22-33-44-55")
     vendor = "D-Link"

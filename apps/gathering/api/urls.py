@@ -1,6 +1,9 @@
 from django.urls import path
 
 from .views import (
+    DeviceGatheringLookupsAPIView,
+    DeviceGatheringResultListAPIView,
+    DeviceGatheringTimelineAPIView,
     MacAddressDetailAPIView,
     MacAddressListAPIView,
     VlanDetailAPIView,
@@ -14,6 +17,9 @@ app_name = "gathering-api"
 # /api/v1/gather/
 
 urlpatterns = [
+    path("task-results/", DeviceGatheringResultListAPIView.as_view(), name="task-result-list"),
+    path("task-results/timeline/", DeviceGatheringTimelineAPIView.as_view(), name="task-result-timeline"),
+    path("task-results/lookups/", DeviceGatheringLookupsAPIView.as_view(), name="task-result-lookups"),
     path("mac-addresses/", MacAddressListAPIView.as_view(), name="mac-address-list"),
     path("mac-addresses/<int:pk>/", MacAddressDetailAPIView.as_view(), name="mac-address-detail"),
     path("vlans/", VlanListAPIView.as_view(), name="vlan-list"),

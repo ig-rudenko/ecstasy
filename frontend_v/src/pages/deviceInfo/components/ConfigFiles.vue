@@ -152,24 +152,36 @@
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500 dark:text-gray-400">
                     Config preview
                 </div>
-                <div class="mt-1 break-all text-base font-semibold text-gray-900 dark:text-gray-100">
+                <div class="mt-1 break-all text-base font-semibold font-mono text-gray-900 dark:text-gray-100">
                     {{ selectedFile?.name }}
                 </div>
             </div>
         </template>
 
-        <div v-if="selectedFile?.content" class="relative rounded-b-3xl bg-gray-950 sm:p-4 text-gray-100">
+        <div v-if="selectedFile?.content" class="relative rounded-b-3xl bg-gray-950 sm:p-2 text-gray-100">
             <div
-                class="sticky top-0 sm:top-4 flex flex-col gap-4 rounded-2xl border border-gray-700 bg-gray-900/90 p-3 lg:flex-row lg:items-center"
+                class="sticky top-0 flex flex-col gap-4 rounded-2xl border border-gray-700 bg-gray-900/90 p-3 lg:flex-row lg:items-center"
             >
                 <div class="min-w-0 flex-1">
-                    <label
-                        for="config-regex-search"
-                        class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-400"
+                    <div
+                        class="flex gap-2 items-center cursor-pointer w-fit"
+                        :class="{ 'mb-2': showConfigFilterPanel }"
+                        @click="showConfigFilterPanel = !showConfigFilterPanel"
                     >
-                        Поиск по регулярному выражению
-                    </label>
-                    <div class="flex flex-wrap flex-row items-center gap-1">
+                        <label
+                            for="config-regex-search"
+                            class="cursor-pointer block text-xs font-semibold text-gray-400 uppercase tracking-widest"
+                        >
+                            Дополнительно
+                        </label>
+                        <i
+                            :class="{
+                                'pi pi-angle-up': showConfigFilterPanel,
+                                'pi pi-angle-down': !showConfigFilterPanel,
+                            }"
+                        />
+                    </div>
+                    <div v-show="showConfigFilterPanel" class="flex flex-wrap flex-row items-center gap-1">
                         <InputText
                             id="config-regex-search"
                             v-model="configSearchPattern"
@@ -211,18 +223,19 @@
                         />
                     </div>
                     <div
+                        v-show="showConfigFilterPanel"
                         id="config-search-help"
                         class="mt-2 min-h-5 text-xs"
                         :class="configSearchError ? 'text-red-300' : 'text-gray-500'"
                     >
                         {{
                             configSearchError ||
-                            "Поиск без учёта регистра; ^ и $ работают для каждой строки. Ctrl+F переводит фокус в это поле."
+                            "Поиск по регулярному выражению без учёта регистра; ^ и $ работают для каждой строки. Ctrl+F переводит фокус в это поле."
                         }}
                     </div>
                 </div>
 
-                <div class="w-full lg:w-64">
+                <div v-show="showConfigFilterPanel" class="w-full lg:w-64">
                     <div class="flex items-center justify-between gap-3">
                         <label
                             for="config-font-size"
@@ -372,6 +385,7 @@ export default defineComponent({
             configMatches: [] as ConfigMatch[],
             activeConfigMatch: -1,
             configFontSize: 12,
+            showConfigFilterPanel: false,
         };
     },
     computed: {

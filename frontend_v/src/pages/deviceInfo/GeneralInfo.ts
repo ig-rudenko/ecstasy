@@ -19,7 +19,7 @@ export interface GeneralInfo {
     zabbixInfo: ZabbixInfo;
     zabbixURL: string;
     consoleURL: string;
-    uptime: number | string;
+    uptime: number;
     vendor: string | null;
     model: string | null;
     serialNumber: string | null;

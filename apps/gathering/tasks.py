@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from celery import shared_task
 from celery.result import AsyncResult
 from django.core.cache import cache
 from django.utils import timezone
@@ -14,15 +15,35 @@ from devicemanager.dc import DeviceRemoteConnector
 from devicemanager.device import DeviceManager, Interfaces
 from ecstasy_project.celery import app
 from ecstasy_project.celery_schedules import get_crontab_schedule
-from ecstasy_project.task import ThreadUpdatedStatusTask
 
-from .models import MacAddress, Vlan
-from .services.configurations import ConfigFileError, ConfigurationGather, LocalConfigStorage
+from .models import DeviceGatheringResult, GatheringTask, MacAddress, Vlan
+from .services.collectors import ThreadUpdatedStatusDeviceTask
+from .services.configurations import ConfigurationGather, LocalConfigStorage
 from .services.mac import MacAddressTableGather
 from .services.vlan.collector import VlanTableGather
 
+task_logger = logging.getLogger(__name__)
 
-class MacTablesGatherTask(ThreadUpdatedStatusTask):
+
+@shared_task(name="cleanup_gathering_tasks_task")
+def cleanup_gathering_tasks_task(retention_days: int) -> dict[str, int]:
+    """Удалить старые завершённые запуски сбора вместе с результатами устройств."""
+
+    retention_days = int(retention_days)
+    if retention_days < 1:
+        raise ValueError("retention_days must be positive")
+
+    cutoff = timezone.now() - timedelta(days=retention_days)
+    queryset = GatheringTask.objects.filter(finished_at__lt=cutoff)
+    deleted_count = queryset.count()
+    queryset.delete()
+    return {
+        "deletedCount": deleted_count,
+        "retentionDays": retention_days,
+    }
+
+
+class MacTablesGatherTask(ThreadUpdatedStatusDeviceTask):
     """
     # Celery задача для сбора таблицы MAC адресов оборудования.
 
@@ -42,37 +63,36 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         super().pre_run()
         logger.setLevel(logging.ERROR)
         cache.set("mac_table_gather_task_id", self.request.id, timeout=None)
+
+        # Удаляем старые MAC адреса.
         res = MacAddress.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
-        self.log(message=f"cleared outdated MAC entries: {res}")
+        task_logger.info("Cleared outdated MAC entries: %s", res)
 
-    def thread_task(self, obj: Devices, **kwargs):
-        try:
-            if not obj.available:
-                return
+    def thread_task(self, obj: Devices, **kwargs) -> str:
+        """Собрать MAC-адреса устройства и вернуть статус результата."""
 
-            with DeviceRemoteConnector(
-                ip=obj.ip,
-                protocol=obj.cmd_protocol,
-                auth_obj=obj.auth_group,
-                snmp_community=obj.snmp_community or "",
-                telnet_port=obj.telnet_port,
-                ssh_port=obj.ssh_port,
-                snmp_port=obj.snmp_port,
-            ) as session:
-                if obj.port_scan_protocol == "snmp":
-                    interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
-                else:
-                    interfaces = Interfaces(session.get_interfaces())
+        if not obj.available:
+            return DeviceGatheringResult.Status.SKIPPED
 
-                gather = MacAddressTableGather(obj, session=session, interfaces=interfaces)
-                gather.run_gathering()
+        with DeviceRemoteConnector(
+            ip=obj.ip,
+            protocol=obj.cmd_protocol,
+            auth_obj=obj.auth_group,
+            snmp_community=obj.snmp_community or "",
+            telnet_port=obj.telnet_port,
+            ssh_port=obj.ssh_port,
+            snmp_port=obj.snmp_port,
+        ) as session:
+            if obj.port_scan_protocol == "snmp":
+                interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
+            else:
+                interfaces = Interfaces(session.get_interfaces())
 
-            self.log(device=self.device_log_format(obj), message="MAC collected")
+            gather = MacAddressTableGather(obj, session=session, interfaces=interfaces)
+            gather.run_gathering()
 
-        except Exception as error:
-            self.log_error(device=self.device_log_format(obj), message=error)
-        finally:
-            self.update_state()
+        self.log(device=obj, message="MAC collected")
+        return DeviceGatheringResult.Status.SUCCESS
 
     @classmethod
     def register_task(cls):
@@ -81,9 +101,9 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор MAC адресов",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор MAC адресов",
                 "crontab": crontab,
                 "enabled": False,
             },
@@ -99,7 +119,7 @@ class MacTablesGatherTask(ThreadUpdatedStatusTask):
         cache.delete("admin_port_filter_lookups")
 
 
-class VlanTablesGatherTask(ThreadUpdatedStatusTask):
+class VlanTablesGatherTask(ThreadUpdatedStatusDeviceTask):
     """
     # Celery задача для сбора таблицы VLAN оборудования.
 
@@ -119,38 +139,36 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
         super().pre_run()
         logger.setLevel(logging.ERROR)
         cache.set("vlan_table_gather_task_id", self.request.id, timeout=None)
+
+        # Удаляем старые VLAN.
         res = Vlan.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
-        self.log(message=f"Cleared outdated VLAN entries: {res}")
+        task_logger.info("Cleared outdated VLAN entries: %s", res)
 
-    def thread_task(self, obj: Devices, **kwargs):
-        try:
-            if not obj.available:
-                return
+    def thread_task(self, obj: Devices, **kwargs) -> str:
+        """Собрать VLAN устройства и вернуть статус результата."""
 
-            with DeviceRemoteConnector(
-                ip=obj.ip,
-                protocol=obj.cmd_protocol,
-                auth_obj=obj.auth_group,
-                snmp_community=obj.snmp_community or "",
-                telnet_port=obj.telnet_port,
-                ssh_port=obj.ssh_port,
-                snmp_port=obj.snmp_port,
-            ) as session:
-                if obj.port_scan_protocol == "snmp":
-                    interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
-                else:
-                    interfaces = Interfaces(session.get_interfaces())
+        if not obj.available:
+            return DeviceGatheringResult.Status.SKIPPED
 
-                gather = VlanTableGather(obj, session=session, interfaces=interfaces)
-                gather.run_gathering()
+        with DeviceRemoteConnector(
+            ip=obj.ip,
+            protocol=obj.cmd_protocol,
+            auth_obj=obj.auth_group,
+            snmp_community=obj.snmp_community or "",
+            telnet_port=obj.telnet_port,
+            ssh_port=obj.ssh_port,
+            snmp_port=obj.snmp_port,
+        ) as session:
+            if obj.port_scan_protocol == "snmp":
+                interfaces = Interfaces(snmp.get_interfaces(obj.ip, obj.snmp_community, obj.snmp_port))
+            else:
+                interfaces = Interfaces(session.get_interfaces())
 
-            self.log(device=self.device_log_format(obj), message="VLANS collected")
+            gather = VlanTableGather(obj, session=session, interfaces=interfaces)
+            gather.run_gathering()
 
-        except Exception as error:
-            self.log_error(device=self.device_log_format(obj), message=error)
-
-        finally:
-            self.update_state()
+        self.log(device=obj, message="VLANS collected")
+        return DeviceGatheringResult.Status.SUCCESS
 
     @classmethod
     def register_task(cls):
@@ -159,16 +177,16 @@ class VlanTablesGatherTask(ThreadUpdatedStatusTask):
             hour="2,6,10,14,18,22",  # Сбор через каждые 4 часа
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор VLAN таблиц",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор VLAN таблиц",
                 "crontab": crontab,
                 "enabled": False,
             },
         )
 
 
-class ConfigurationGatherTask(ThreadUpdatedStatusTask):
+class ConfigurationGatherTask(ThreadUpdatedStatusDeviceTask):
     """
     # Celery задача для сбора таблицы MAC адресов оборудования.
 
@@ -181,20 +199,16 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
     queryset = Devices.objects.filter(active=True, collect_configurations=True)
     max_workers = 40
 
-    def thread_task(self, obj: Devices, **kwargs):
-        storage = LocalConfigStorage(obj)
-        try:
-            gather = ConfigurationGather(storage=storage)
-            is_collected = gather.collect_config_file()
-            if is_collected:
-                gather.delete_outdated_configs()
-            self.log(device=self.device_log_format(obj), message=f"collect_config_file: {is_collected}")
-        except ConfigFileError as error:
-            self.log_error(device=self.device_log_format(obj), message=error.message)
-        except Exception as error:
-            self.log_error(device=self.device_log_format(obj), message=error)
+    def thread_task(self, obj: Devices, **kwargs) -> str:
+        """Собрать конфигурацию устройства и вернуть статус результата."""
 
-        self.update_state()
+        storage = LocalConfigStorage(obj)
+        gather = ConfigurationGather(storage=storage)
+        is_collected = gather.collect_config_file()
+        if is_collected:
+            gather.delete_outdated_configs()
+        self.log(device=obj, message=f"collect_config_file: {is_collected}")
+        return DeviceGatheringResult.Status.SUCCESS
 
     @classmethod
     def register_task(cls):
@@ -203,16 +217,16 @@ class ConfigurationGatherTask(ThreadUpdatedStatusTask):
             hour="4",
         )
         PeriodicTask.objects.get_or_create(
-            name="Сбор файлов конфигураций",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Сбор файлов конфигураций",
                 "crontab": crontab,
                 "enabled": False,
             },
         )
 
 
-class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
+class DevicesComplexGatherTask(ThreadUpdatedStatusDeviceTask):
     """
     # Celery задача для сбора интерфейсов, таблицы MAC адресов и VLAN оборудования.
 
@@ -233,26 +247,28 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
         logger.setLevel(logging.ERROR)
         cache.set("devices_complex_gather_task_id", self.request.id, timeout=None)
 
-    def thread_task(self, obj: Devices, **kwargs):
-        try:
-            if not obj.available:
-                return
+        # Удаляем старые MAC адреса.
+        res = MacAddress.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
+        task_logger.info("Cleared outdated MAC entries: %s", res)
 
-            with DeviceRemoteConnector(
-                ip=obj.ip,
-                protocol=obj.cmd_protocol,
-                auth_obj=obj.auth_group,
-                snmp_community=obj.snmp_community or "",
-                telnet_port=obj.telnet_port,
-                ssh_port=obj.ssh_port,
-                snmp_port=obj.snmp_port,
-            ) as session:
-                self._collect(device=obj, session=session)
+    def thread_task(self, obj: Devices, **kwargs) -> str:
+        """Выполнить комплексный сбор устройства и вернуть статус результата."""
 
-        except Exception as error:
-            self.log_error(device=self.device_log_format(obj), message=error)
-        finally:
-            self.update_state()
+        if not obj.available:
+            return DeviceGatheringResult.Status.SKIPPED
+
+        with DeviceRemoteConnector(
+            ip=obj.ip,
+            protocol=obj.cmd_protocol,
+            auth_obj=obj.auth_group,
+            snmp_community=obj.snmp_community or "",
+            telnet_port=obj.telnet_port,
+            ssh_port=obj.ssh_port,
+            snmp_port=obj.snmp_port,
+        ) as session:
+            self._collect(device=obj, session=session)
+
+        return DeviceGatheringResult.Status.SUCCESS
 
     def _collect(self, device: Devices, session):
         interfaces_desc = None
@@ -267,15 +283,13 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
         synchronizer.sync_device_info_to_db()
         synchronizer.device_collector.push_zabbix_inventory()
         synchronizer.save_interfaces_to_db()
-        self.log(device=self.device_log_format(device), message="Интерфейсы успешно обновлены")
+        self.log(device=device, message="Интерфейсы успешно обновлены")
 
         # MAC GATHERING
         if device.collect_mac_addresses:
             mac_gather = MacAddressTableGather(device, session=session, interfaces=interfaces)
             mac_gather.run_gathering()
-            res = MacAddress.objects.filter(datetime__lt=timezone.now() - timedelta(hours=48)).delete()
-            self.log(message=f"cleared outdated MAC entries: {res}")
-            self.log(device=self.device_log_format(device), message="MAC адреса собраны")
+            self.log(device=device, message="MAC адреса собраны")
             interfaces_desc = mac_gather.interfaces_desc
 
         # VLAN GATHERING
@@ -284,7 +298,7 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
                 device, session=session, interfaces=interfaces, interfaces_desc=interfaces_desc
             )
             vlan_gather.run_gathering()
-            self.log(device=self.device_log_format(device), message="VLAN собраны")
+            self.log(device=device, message="VLAN собраны")
 
     @classmethod
     def register_task(cls):
@@ -293,9 +307,9 @@ class DevicesComplexGatherTask(ThreadUpdatedStatusTask):
             hour="1,3,5,7,9,11,13,15,17,19,21,23",
         )
         PeriodicTask.objects.get_or_create(
-            name="Комплексный сбор данных оборудования",
+            task=cls.name,
             defaults={
-                "task": cls.name,
+                "name": "Комплексный сбор данных оборудования",
                 "crontab": crontab,
                 "enabled": False,
             },
