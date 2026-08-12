@@ -29,6 +29,7 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 ENV = os.getenv("DJANGO_ENV", "dev")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
