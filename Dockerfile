@@ -48,6 +48,7 @@ SHELL ["/bin/sh", "-exc"]
 # Установка дополнительных пакетов для работы приложения.
 RUN apk add --update --no-cache \
     mariadb-connector-c \
+    mariadb-client \
     net-snmp-tools \
     busybox-extras \
     openssh-client \
@@ -67,6 +68,7 @@ ENV PATH=/app/venv/bin:$PATH \
 
 COPY --chown=$user_id:$group_id . /app
 COPY --link --chown=$user_id:$group_id --from=builder /app/venv/ /app/venv
+COPY conf/mysql-client.cnf /etc/my.cnf.d/ecstasy-client.cnf
 
 RUN chmod +x run.sh
 

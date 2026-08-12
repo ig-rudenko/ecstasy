@@ -81,8 +81,18 @@ if DEBUG:
 if ENV == "dev":
     INSTALLED_APPS += ["django_extensions"]
 
-DBBACKUP_STORAGE = "django.core.files.storage.FileSystemStorage"
-DBBACKUP_STORAGE_OPTIONS = {"location": BASE_DIR / "db-backup"}
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+    "dbbackup": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {"location": BASE_DIR / "db-backup"},
+    },
+}
 DBBACKUP_CLEANUP_KEEP = 1
 DBBACKUP_CLEANUP_KEEP_MEDIA = 1
 
