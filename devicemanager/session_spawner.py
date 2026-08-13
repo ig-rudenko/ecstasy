@@ -4,13 +4,15 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
+import pexpect
+
 if TYPE_CHECKING:
-    from pexpect import spawn as Spawn
+    from pexpect import spawn as Spawn  # noqa
 else:
     from pexpect.spawnbase import SpawnBase as Spawn
 
 if TYPE_CHECKING or sys.platform != "win32":
-    from pexpect import spawn as Spawn
+    from pexpect import spawn as Spawn  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(str(os.getenv("DEVICE_CONNECTOR_LOG_LEVEL", "INFO")))
@@ -59,6 +61,10 @@ class SessionSpawner(Spawn):
         )
         self.ip = ip
         self._before_history = ""
+        self._cmd_history: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
+        self._cmd_history = []
 
     @property
     def before_history(self) -> str:
@@ -72,17 +78,30 @@ class SessionSpawner(Spawn):
 
     def sendline(self, s: str | bytes = "") -> int:
         logger.debug("Device: %s | sendline: %s", self.ip, s)
+        self._add_cmd_to_history(s)
         return super().sendline(s)
 
     def send(self, s: str | bytes) -> int:
         logger.debug("Device: %s | send: %s", self.ip, s)
+        self._add_cmd_to_history(s)
         return super().send(s)
 
-    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):
+    def expect(self, pattern, timeout=-1, searchwindowsize=-1, async_=False):  # noqa
         logger.debug("Device: %s | expect: %s", self.ip, pattern)
 
-        res = super().expect(pattern, timeout, searchwindowsize, async_)
+        try:
+            res = super().expect(pattern, timeout, searchwindowsize, async_)  # noqa
+        except (pexpect.EOF, pexpect.TIMEOUT) as exc:
+            raise exc.__class__(self._format_exception(exc)) from exc
 
         logger.debug("Device: %s | expect: %s", self.ip, res)
         logger.debug("Device: %s | before: %s", self.ip, self.before)
         return res
+
+    def _add_cmd_to_history(self, s: str | bytes) -> None:
+        if len(self._cmd_history) > 10:
+            self._cmd_history = self._cmd_history[-3:]
+        self._cmd_history.append(s)
+
+    def _format_exception(self, exc: pexpect.EOF | pexpect.TIMEOUT) -> str:
+        return str(exc) + f"\ncmd history:\n{self._cmd_history[-3:]}"
