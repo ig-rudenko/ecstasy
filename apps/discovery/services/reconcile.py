@@ -2,7 +2,7 @@ import re
 
 from apps.check.models import Devices
 
-from ..models import DiscoveryCandidate
+from ..models import DiscoveryCandidate, DiscoveryProfile
 from .dataclasses import DeviceFingerprint
 
 
@@ -56,7 +56,10 @@ def find_available_cli_protocol(candidate: DiscoveryCandidate) -> str | None:
 def update_created_device_protocols(candidate: DiscoveryCandidate) -> None:
     """Заменить недоступные протоколы ранее созданного оборудования."""
 
-    if candidate.status != DiscoveryCandidate.Status.CREATED or candidate.device_id is None:
+    if (
+        candidate.status not in {DiscoveryCandidate.Status.CREATED, DiscoveryCandidate.Status.DUPLICATE}
+        or candidate.device_id is None
+    ):
         return
 
     available_cli_protocol = find_available_cli_protocol(candidate)
@@ -78,7 +81,7 @@ def update_created_device_protocols(candidate: DiscoveryCandidate) -> None:
         device.save(update_fields=update_fields)
 
 
-def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
+def upsert_candidate(profile: DiscoveryProfile, fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     """Создать или обновить discovery candidate по fingerprint."""
 
     duplicate_device = find_duplicate_device(fingerprint)
@@ -123,7 +126,7 @@ def upsert_candidate(fingerprint: DeviceFingerprint) -> DiscoveryCandidate:
     }
 
     candidate, created = DiscoveryCandidate.objects.update_or_create(ip=fingerprint.ip, defaults=defaults)
-    if not created and candidate.status == DiscoveryCandidate.Status.CREATED:
+    if not created and profile.auto_create:
         update_created_device_protocols(candidate)
     if not created and candidate.status in {
         DiscoveryCandidate.Status.CREATED,

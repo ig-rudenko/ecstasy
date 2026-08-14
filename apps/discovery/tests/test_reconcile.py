@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from apps.check.models import AuthGroup, DeviceGroup, Devices
-from apps.discovery.models import DiscoveryCandidate
+from apps.discovery.models import DiscoveryCandidate, DiscoveryProfile
 from apps.discovery.services.dataclasses import DeviceFingerprint
 from apps.discovery.services.reconcile import calculate_confidence, upsert_candidate
 
@@ -14,6 +14,14 @@ class DiscoveryReconcileTests(TestCase):
 
         self.group = DeviceGroup.objects.create(name="Access")
         self.auth_group = AuthGroup.objects.create(name="default", login="u", password="p")
+        self.profile = DiscoveryProfile.objects.create(
+            name="test",
+            auto_create=True,
+            networks=[],
+            device_group=self.group,
+            cmd_protocol="auto",
+            port_scan_protocol="auto",
+        )
 
     def create_created_candidate(
         self,
@@ -52,7 +60,7 @@ class DiscoveryReconcileTests(TestCase):
             selected_auth_group=self.auth_group,
         )
 
-        candidate = upsert_candidate(fingerprint)
+        candidate = upsert_candidate(self.profile, fingerprint)
 
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)
         self.assertEqual(candidate.confidence, 70)
@@ -74,7 +82,7 @@ class DiscoveryReconcileTests(TestCase):
             detected_protocols={"ping": True},
         )
 
-        candidate = upsert_candidate(fingerprint)
+        candidate = upsert_candidate(self.profile, fingerprint)
 
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.DUPLICATE)
         self.assertEqual(candidate.device, device)
@@ -101,7 +109,7 @@ class DiscoveryReconcileTests(TestCase):
             detected_protocols={"ping": True},
         )
 
-        candidate = upsert_candidate(fingerprint)
+        candidate = upsert_candidate(self.profile, fingerprint)
 
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)
         self.assertIsNone(candidate.device)
@@ -127,7 +135,7 @@ class DiscoveryReconcileTests(TestCase):
             detected_protocols={"ping": True},
         )
 
-        candidate = upsert_candidate(fingerprint)
+        candidate = upsert_candidate(self.profile, fingerprint)
 
         self.assertEqual(candidate.status, DiscoveryCandidate.Status.READY)
         self.assertIsNone(candidate.device)
@@ -147,7 +155,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "ssh"},
         )
 
-        updated_candidate = upsert_candidate(fingerprint)
+        updated_candidate = upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(updated_candidate.status, DiscoveryCandidate.Status.CREATED)
@@ -168,7 +176,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "telnet"},
         )
 
-        updated_candidate = upsert_candidate(fingerprint)
+        updated_candidate = upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(updated_candidate.status, DiscoveryCandidate.Status.CREATED)
@@ -189,7 +197,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "ssh"},
         )
 
-        upsert_candidate(fingerprint)
+        upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(device.cmd_protocol, "ssh")
@@ -209,7 +217,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "ssh"},
         )
 
-        upsert_candidate(fingerprint)
+        upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(device.cmd_protocol, "telnet")
@@ -229,7 +237,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "ssh"},
         )
 
-        upsert_candidate(fingerprint)
+        upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(device.cmd_protocol, "telnet")
@@ -249,7 +257,7 @@ class DiscoveryReconcileTests(TestCase):
             raw={"cliProtocol": "telnet"},
         )
 
-        upsert_candidate(fingerprint)
+        upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(device.cmd_protocol, "ssh")
@@ -268,7 +276,7 @@ class DiscoveryReconcileTests(TestCase):
             detected_protocols={"snmp": False, "ssh": False, "telnet": False},
         )
 
-        upsert_candidate(fingerprint)
+        upsert_candidate(self.profile, fingerprint)
 
         device.refresh_from_db()
         self.assertEqual(device.cmd_protocol, "ssh")

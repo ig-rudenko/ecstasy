@@ -167,7 +167,7 @@ def discovery_run_task(self: Task, run_id: int, networks_override: list[str] | N
             if result.fingerprint is None:
                 raise ValueError(f"Отсутствует fingerprint для {result.ip}")
 
-            candidate = upsert_candidate(result.fingerprint)
+            candidate = upsert_candidate(profile, result.fingerprint)
             save_attempts(run, candidate, result.attempts)
             counters["found"] += 1
 
