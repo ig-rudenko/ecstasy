@@ -85,7 +85,7 @@ class VlanTableGather(AbstractRealtimeCollector):
             }
 
             ports_to_create = [
-                VlanPort(vlan_id=vlan_id, port=port, desc=desc)
+                VlanPort(vlan_id=vlan_id, port=port[:50], desc=desc[:256])
                 for (vlan_id, port), desc in desired_ports.items()
                 if (vlan_id, port) not in existing_ports
             ]

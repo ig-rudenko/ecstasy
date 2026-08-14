@@ -87,7 +87,7 @@ class MacAddress(models.Model):
     type = models.CharField(max_length=1)
     device = models.ForeignKey("check.Devices", on_delete=models.CASCADE)
     port = models.CharField(max_length=50)
-    desc = models.CharField(max_length=128)
+    desc = models.CharField(max_length=256)
     datetime = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -100,7 +100,7 @@ class MacAddress(models.Model):
 
 class Vlan(models.Model):
     vlan = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(4096)])
-    desc = models.CharField(max_length=64, blank=True)
+    desc = models.CharField(max_length=256, blank=True)
     device = models.ForeignKey("check.Devices", on_delete=models.CASCADE)
     datetime = models.DateTimeField(auto_now=True)  # Обновляется при каждом сохранении
 
