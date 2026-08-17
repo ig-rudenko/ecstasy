@@ -188,6 +188,7 @@ class BaseDevice(AbstractDevice, ABC):
         self.snmp_port = snmp_port
         self.connection_protocol = ""
         self._session_lock = RLock()
+        self.session.clear_cmd_history()  # Очищаем историю отправленных команд, там был ввод пароля.
 
     def acquire_session(self, blocking: bool = True) -> bool:
         """Зарезервировать терминальную сессию для текущего потока."""

@@ -1,5 +1,5 @@
-x-ecstasy-image: &ecstasy-image ecstasy:20.0.12
-x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.12
+x-ecstasy-image: &ecstasy-image ecstasy:20.0.13
+x-ecstasy-frontend-image: &ecstasy-frontend-image ecstasy-frontend:20.0.13
 x-logging: &logging
   options:
     max-size: "10m"
@@ -24,7 +24,7 @@ services:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8000}:80"
     volumes:
       - "./static:/usr/share/nginx/static"
-      - "./nginx/default.conf:/etc/nginx/conf.d/default.conf"
+      - "./conf/nginx.ecstasy.conf:/etc/nginx/conf.d/default.conf"
     depends_on:
       - backend
     networks:
@@ -65,7 +65,8 @@ services:
     image: *ecstasy-image
     logging: *logging
     restart: unless-stopped
-    command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1
+    command: celery -A ecstasy_project worker -l INFO -c 4 -n worker1 --max-memory-per-child 300000
+    mem_limit: 900m
     env_file:
       - .env
     environment:

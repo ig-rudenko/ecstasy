@@ -7,6 +7,7 @@
 !create_docs.py
 !device_connector.py
 !manage.py
+!conf/mysql-client.cnf
 !run.sh
 !pyproject.toml
 !uv.lock

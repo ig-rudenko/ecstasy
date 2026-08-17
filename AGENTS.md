@@ -7,13 +7,15 @@
 - Перед изменениями читать связанные исходники, тесты и конфигурацию.
 - Не отменять и не перезаписывать изменения пользователя в грязном рабочем дереве.
 - Вносить только изменения, необходимые для текущей задачи; не выполнять попутный рефакторинг.
-- Не редактировать сгенерированные файлы и каталоги: `frontend_v/node_modules/`, `frontend_v/dist/`, `__pycache__/`, `*.pyc`.
+- Не редактировать сгенерированные файлы и каталоги: `frontend_v/node_modules/`, `frontend_v/dist/`, `__pycache__/`,
+  `*.pyc`.
 - Не добавлять в репозиторий секреты и значения из локального `.env`.
 
 ## Описание проекта
 
 - Name: Ecstasy (Equipment Control System To Assist You).
-- Назначение: веб-приложение для управления сетевым оборудованием, сбора данных, поиска и визуализации сетевой информации.
+- Назначение: веб-приложение для управления сетевым оборудованием, сбора данных, поиска и визуализации сетевой
+  информации.
 - Backend: Python 3.12+, Django, Django REST Framework, Celery.
 - Frontend: Vue.js 3, TypeScript, Vite, Tailwind CSS 4, PrimeVue 4, Vue Router, Vuex.
 - Хранилища и инфраструктура: MySQL, Redis, Nginx, Docker Compose.
@@ -59,16 +61,20 @@
 - `frontend_v/src/router.ts` — маршруты SPA и проверка авторизации.
 - `frontend_v/src/services/` — HTTP-клиенты и клиентская бизнес-логика.
 - `docker-compose.yaml` — frontend, backend, Celery worker, Celery beat, device connector, Redis и MySQL.
-- `nginx/default.conf` — раздача SPA и reverse proxy.
+- `conf/default.conf` — раздача SPA и reverse proxy.
 
 ## Django-приложения
 
-Активные Django-приложения определяются списком `INSTALLED_APPS` в `ecstasy_project/settings.py`; наличие каталога в `apps/` само по себе не означает, что приложение подключено.
+Активные Django-приложения определяются списком `INSTALLED_APPS` в `ecstasy_project/settings.py`; наличие каталога в
+`apps/` само по себе не означает, что приложение подключено.
 
 - `apps/accounting/` — текущий пользователь, permissions, API-токены и OIDC-конфигурация. Модель: `UserAPIToken`.
-- `apps/app_settings/` — singleton-настройки приложения. Модели: `LogsElasticStackSettings`, `ZabbixConfig`, `TracerouteConfig`, `AccessRingSettings`.
-- `apps/check/` — основной домен оборудования, интерфейсов, авторизации, команд, конфигураций и массового выполнения команд. API: `/api/v1/devices/`.
-- `apps/discovery/` — автоматическое обнаружение оборудования: профили, запуски, кандидаты, fingerprint и provisioning. API: `/api/v1/discovery/`.
+- `apps/app_settings/` — singleton-настройки приложения. Модели: `LogsElasticStackSettings`, `ZabbixConfig`,
+  `TracerouteConfig`, `AccessRingSettings`.
+- `apps/check/` — основной домен оборудования, интерфейсов, авторизации, команд, конфигураций и массового выполнения
+  команд. API: `/api/v1/devices/`.
+- `apps/discovery/` — автоматическое обнаружение оборудования: профили, запуски, кандидаты, fingerprint и provisioning.
+  API: `/api/v1/discovery/`.
 - `apps/gathering/` — собранные MAC-адреса, VLAN и порты VLAN. API: `/api/v1/gather/`.
 - `apps/gpon/` — адреса, GPON-топология, техническая возможность, клиенты, услуги и подключения. API: `/api/v1/gpon/`.
 - `apps/maps/` — карты и слои, включая защищённую отдачу файлов. API: `/api/v1/maps/`.
@@ -96,7 +102,9 @@
 - `devicemanager/templates/` — TextFSM-шаблоны интерфейсов, VLAN и ARP.
 - `devicemanager/tests/` — тесты драйверов, фабрик, сессий и connector API.
 
-Изменения в общем API базового устройства или фабрик имеют большой радиус влияния: проверять связанные vendor-классы и `devicemanager/tests/`. Тесты не должны устанавливать реальные соединения с оборудованием; использовать mock/fixture-подход существующих тестов.
+Изменения в общем API базового устройства или фабрик имеют большой радиус влияния: проверять связанные vendor-классы и
+`devicemanager/tests/`. Тесты не должны устанавливать реальные соединения с оборудованием; использовать
+mock/fixture-подход существующих тестов.
 
 ## Frontend
 
@@ -109,9 +117,11 @@
 - Alias `@` указывает на `frontend_v/src`.
 - Приложение использует JWT; Keycloak/OIDC включается конфигурацией backend.
 
-Форматирование frontend задаёт `.prettierrc.json`: 4 пробела, двойные кавычки, `printWidth=120`, CRLF. Следовать существующему стилю Vue-компонентов и не включать отключённые ESLint-правила без отдельной задачи.
+Форматирование frontend задаёт `.prettierrc.json`: 4 пробела, двойные кавычки, `printWidth=120`, CRLF. Следовать
+существующему стилю Vue-компонентов и не включать отключённые ESLint-правила без отдельной задачи.
 
-Для arbitrary values Tailwind колонки `grid-template-columns` разделяются пробелами, которые записываются через `_`, а не запятыми:
+Для arbitrary values Tailwind колонки `grid-template-columns` разделяются пробелами, которые записываются через `_`, а
+не запятыми:
 
 - Неверно: `lg:grid-cols-[1fr,16rem,16rem,auto]`.
 - Верно: `lg:grid-cols-[1fr_16rem_16rem_auto]`.
@@ -125,7 +135,8 @@
 - JWT endpoints: `/api/token`, `/api/token/refresh`, `/api/token/verify`.
 - Swagger: `/api/swagger/`; Redoc: `/api/redoc/`.
 - Keycloak/OIDC опционален и включается через `KEYCLOAK_ENABLE`.
-- Ошибки API проходят через `ecstasy_project.error_handler.custom_exception_handler`; сохранять существующий формат ошибок.
+- Ошибки API проходят через `ecstasy_project.error_handler.custom_exception_handler`; сохранять существующий формат
+  ошибок.
 
 ## Команды
 
@@ -181,7 +192,8 @@ docker compose up -d
 - Для исправления бага сначала добавить или определить тест, воспроизводящий проблему.
 - При изменении моделей создавать миграцию и запускать `makemigrations --check --dry-run`.
 - Сохранять разделение слоёв: API-код в `api/`, бизнес-логика в `services/`, работа с оборудованием в `devicemanager/`.
-- Не выполнять сетевые вызовы, Celery-задачи или обращения к внешним Zabbix/Keycloak/Telegram API в unit-тестах без моков.
+- Не выполнять сетевые вызовы, Celery-задачи или обращения к внешним Zabbix/Keycloak/Telegram API в unit-тестах без
+  моков.
 
 ## Проверка перед завершением
 
@@ -189,4 +201,5 @@ docker compose up -d
 - Изменение моделей: миграции плюс `makemigrations --check --dry-run`.
 - Изменение общего `devicemanager`: соответствующие тесты в `devicemanager/tests/`.
 - Frontend-изменение: `npm run lint`, `npm run format:check`, `npm run build`.
-- Изменение сквозного пользовательского сценария: проверить согласованность frontend service, Django URL/view/serializer и permissions.
+- Изменение сквозного пользовательского сценария: проверить согласованность frontend service, Django URL/view/serializer
+  и permissions.

@@ -3,11 +3,13 @@ from importlib import import_module
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from ..models import AuthGroup, Bras, DeviceGroup, Devices, Profile, UsersActions
+from ..new_permissions import create_groups_with_permissions, create_permission
 
 User = get_user_model()
 
@@ -329,6 +331,7 @@ class ProfileTest(TestCase):
             [
                 "device_interface_reboot",
                 "device_interface_up_down",
+                "device_interface_change_desc",
                 "device_bras_read",
                 "device_bras_read_write",
                 "device_config_view",
@@ -336,6 +339,38 @@ class ProfileTest(TestCase):
                 "device_config_delete",
                 "device_cmd_run",
             ],
+        )
+
+    def test_post_migrate_creator_restores_interface_change_permission(self):
+        """Post-migrate hook must create the interface description permission."""
+        Profile.get_permission(Profile.INTERFACE_CHANGE_DESC).delete()
+
+        create_permission(sender=None)
+
+        permission = Profile.get_permission(Profile.INTERFACE_CHANGE_DESC).get()
+        self.assertEqual(permission.name, "Изменение описания порта")
+
+    def test_post_migrate_creator_adds_interface_change_group(self):
+        """Post-migrate hook must create a group for interface description changes."""
+        group_name = "Device | Изменение описания интерфейсов оборудования"
+        Group.objects.filter(name=group_name).delete()
+
+        create_groups_with_permissions(sender=None)
+
+        group = Group.objects.get(name=group_name)
+        self.assertEqual(
+            list(group.permissions.values_list("codename", flat=True)),
+            [Profile.INTERFACE_CHANGE_DESC],
+        )
+
+    def test_interface_change_permission_is_available_to_profile_admin(self):
+        """Profile admin permission list must include the new device permission."""
+        profile = Profile.objects.get(user__username="first_user")
+        profile.user.user_permissions.add(*Profile.get_permission(Profile.INTERFACE_CHANGE_DESC))
+
+        self.assertIn(
+            "check.device_interface_change_desc",
+            Profile.get_user_device_permissions(profile.user),
         )
 
     def test_permissions_migration_keeps_legacy_hierarchy(self):

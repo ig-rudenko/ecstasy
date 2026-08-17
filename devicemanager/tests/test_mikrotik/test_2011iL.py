@@ -4,8 +4,11 @@ from devicemanager.vendors import MikroTik
 
 
 class FakeMikrotik2011iLSession:
-    def __init__(self):
+    def __init__(self) -> None:
         self.before = b""
+        self.commands: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
         self.commands = []
 
     def sendline(self, command: str, *args, **kwargs):

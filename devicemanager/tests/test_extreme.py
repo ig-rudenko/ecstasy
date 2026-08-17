@@ -24,8 +24,12 @@ Diagnostics : 5.10"""
 
 
 class FakeExtremeSession:
-    def __init__(self):
+    def __init__(self) -> None:
         self._output = b""
+        self._cmd_history: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
+        self._cmd_history = []
 
     @staticmethod
     def expect(*args, **kwargs):
