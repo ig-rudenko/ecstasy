@@ -30,8 +30,11 @@ class DLinkPexpectFaker:
     ## Это класс создает имитацию сессии pexpect для обработки команд DLink.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.before = b""
+        self.sent_commands: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
         self.sent_commands = []
 
     def send(self, command: str):

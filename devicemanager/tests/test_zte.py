@@ -34,8 +34,12 @@ class TestZTEFactory(AbstractTestFactory):
 
 
 class FakeZTE2936FISession:
-    def __init__(self):
+    def __init__(self) -> None:
         self._output = b""
+        self._cmd_history: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
+        self._cmd_history = []
 
     @staticmethod
     def expect(*args, **kwargs):
@@ -467,7 +471,6 @@ class TestZTE2928E(SimpleTestCase):
 
 
 class TestZTEVlanTable(SimpleTestCase):
-
     def setUp(self) -> None:
         self.device = ZTE(
             session=FakeZTE2928ESession(),

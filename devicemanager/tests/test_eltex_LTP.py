@@ -44,6 +44,10 @@ class EltexLTP4XPexpectFaker:
         self.before: bytes = b""
         self.sent_commands: list[str] = []
         self.expect_cmd = 0
+        self._cmd_history: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
+        self._cmd_history = []
 
     def send(self, command: str) -> None:
         """
@@ -118,6 +122,10 @@ class EltexLTP8XPexpectFaker:
         self.before: bytes = b""
         self.sent_commands: list[str] = []
         self.expect_cmd = 0
+        self._cmd_history: list[str | bytes] = []
+
+    def clear_cmd_history(self) -> None:
+        self._cmd_history = []
 
     def send(self, command: str):
         """

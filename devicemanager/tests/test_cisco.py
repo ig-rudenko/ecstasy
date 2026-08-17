@@ -30,11 +30,14 @@ class CiscoPexpectFaker:
     ## Это класс создает имитацию сессии pexpect для обработки команд Cisco.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.before = b""
-        self.sent_commands = []
+        self.sent_commands: list[str | bytes] = []
         self.expect_cmd = 0
         self.before_history = ""
+
+    def clear_cmd_history(self) -> None:
+        self.sent_commands = []
 
     def send(self, command: str):
         return self.sendline(command.strip())

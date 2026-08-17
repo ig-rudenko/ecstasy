@@ -110,6 +110,9 @@ class DeviceInterfacePatternRuleAdmin(ModelAdmin):
         "matched_devices_count",
         "updated_at",
     ]
+    list_editable = [
+        "enabled",
+    ]
     list_filter = [
         "enabled",
         InterfacePatternVendorDropdownFilter,
