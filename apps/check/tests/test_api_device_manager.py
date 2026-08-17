@@ -306,10 +306,21 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
         )
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_set_description_forbidden_with_legacy_bras_permission(self):
+        """Legacy BRAS permission must not grant access to interface descriptions."""
+        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
+
+        resp = self.client.post(
+            reverse("devices-api:set-description", args=(self.device.name,)),
+            data={"port": "eth1", "description": "new_desc"},
+        )
+
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
     @patch("apps.check.models.Devices.connect")
     def test_clear_description(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
+        self.user.profile.set_permission(self.user.profile.INTERFACE_CHANGE_DESC)
 
         # Подготовка данных.
         set_description_result = SetDescriptionResult(
@@ -361,7 +372,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_set_description(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
+        self.user.profile.set_permission(self.user.profile.INTERFACE_CHANGE_DESC)
 
         # Подготовка данных.
         description = "Новое описание"
@@ -417,7 +428,7 @@ class ChangeDescriptionAPIViewTestCase(APITestCase):
     @patch("apps.check.models.Devices.connect")
     def test_set_description_too_long(self, device_connect: Mock):
         # Меняем уровень доступа пользователя, чтобы он мог изменять описания портов.
-        self.user.profile.set_permission(self.user.profile.BRAS_READ_WRITE)
+        self.user.profile.set_permission(self.user.profile.INTERFACE_CHANGE_DESC)
 
         # Подготовка данных.
         description = "Новое описание" * 100

@@ -474,6 +474,7 @@ class Profile(models.Model):
 
     INTERFACE_REBOOT = "device_interface_reboot"
     INTERFACE_UP_DOWN = "device_interface_up_down"
+    INTERFACE_CHANGE_DESC = "device_interface_change_desc"
     BRAS_READ = "device_bras_read"
     BRAS_READ_WRITE = "device_bras_read_write"
     CONFIG_VIEW = "device_config_view"
@@ -485,6 +486,7 @@ class Profile(models.Model):
     PERMISSION_LEVELS = [
         INTERFACE_REBOOT,
         INTERFACE_UP_DOWN,
+        INTERFACE_CHANGE_DESC,
         BRAS_READ,
         BRAS_READ_WRITE,
         CONFIG_VIEW,
@@ -495,6 +497,7 @@ class Profile(models.Model):
     DEVICE_PERMISSION_NAMES = {
         "check.device_interface_reboot",
         "check.device_interface_up_down",
+        "check.device_interface_change_desc",
         "check.device_bras_read",
         "check.device_bras_read_write",
         "check.device_config_view",
@@ -506,6 +509,7 @@ class Profile(models.Model):
     PERMS = (
         (INTERFACE_REBOOT, "Перезагрузка порта"),
         (INTERFACE_UP_DOWN, "Изменение состояния порта"),
+        (INTERFACE_CHANGE_DESC, "Изменение описания порта"),
         (BRAS_READ, "Просмотр сессий BRAS"),
         (BRAS_READ_WRITE, "Сброс сессий BRAS"),
         (CONFIG_VIEW, "Просмотр конфигураций оборудования"),

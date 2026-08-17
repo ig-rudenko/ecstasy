@@ -30,6 +30,10 @@ def create_groups_with_permissions(sender, **kwargs):
     g.permissions.add(
         get_device_permission(Profile.INTERFACE_UP_DOWN),
     )
+    g, _ = Group.objects.get_or_create(name="Device | Изменение описания интерфейсов оборудования")
+    g.permissions.add(
+        get_device_permission(Profile.INTERFACE_CHANGE_DESC),
+    )
     g, _ = Group.objects.get_or_create(name="Device | BRAS | Просмотр сессий")
     g.permissions.add(
         get_device_permission(Profile.BRAS_READ),

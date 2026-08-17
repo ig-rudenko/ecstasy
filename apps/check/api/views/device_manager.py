@@ -130,7 +130,7 @@ class ChangeDescriptionAPIView(DeviceAPIView):
         return super().get_queryset().select_related("auth_group", "devicesinfo")
 
     @except_connection_errors
-    @method_decorator(profile_permission(models.Profile.BRAS_READ_WRITE))
+    @method_decorator(profile_permission(models.Profile.INTERFACE_CHANGE_DESC))
     def post(self, request: Request, *args, **kwargs):
         """
         ## Меняем описание на порту оборудования
