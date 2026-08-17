@@ -3,18 +3,21 @@ import re
 import time
 from pathlib import Path
 
-from .base.device import AbstractConfigDevice, BaseDevice
+from .base.device import AbstractConfigDevice, AbstractSearchDevice, BaseDevice
 from .base.factory import AbstractDeviceFactory
 from .base.helpers import create_mac_regexp, parse_by_template
 from .base.types import (
     COOPER_TYPES,
     FIBER_TYPES,
+    ArpInfoResult,
     DeviceAuthDict,
     InterfaceListType,
     InterfaceType,
     InterfaceVLANListType,
     MACListType,
+    MACTableType,
     PortInfoType,
+    VlanTableType,
 )
 from .base.validators import validate_and_format_port
 
@@ -41,7 +44,7 @@ def validate_port(if_invalid_return=None):
     return validate_and_format_port(if_invalid_return=if_invalid_return, validator=procurve_port_formatter)
 
 
-class ProCurve(BaseDevice, AbstractConfigDevice):
+class ProCurve(BaseDevice, AbstractConfigDevice, AbstractSearchDevice):
     prompt = r"\S+[#>] "
     space_prompt = r"\s*-- MORE --.+quit: Control-C\s*"
     vendor = "ProCurve"
@@ -128,14 +131,147 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
     def _get_no_trk(port: str):
         return re.sub(r"-trk\d+$", "", port.strip(), flags=re.IGNORECASE)
 
-    @staticmethod
-    def _get_like_trk(port: str):
-        if trk := re.search(r"-(Trk\d+)$", port, flags=re.IGNORECASE):
-            return trk.group(1).lower()
-        return port
-
+    @BaseDevice.lock_session
     def get_vlans(self) -> InterfaceVLANListType:
-        return []
+        # [(name, status, desc)]
+        interfaces = self.get_interfaces()
+
+        # [(vid, ports, vlan_name)]
+        vlan_table = self.get_vlan_table()
+
+        port_vlans: dict[str, list[int]] = {}
+        for vid, ports, _ in vlan_table:
+            for port in ports:
+                port_vlans.setdefault(port, []).append(vid)
+
+        return [(name, status, desc, port_vlans[name]) for name, status, desc in interfaces]  # noqa
+
+    @BaseDevice.lock_session
+    def get_vlan_table(self) -> VlanTableType:
+        # {vid: vlan_name}
+        vlans_names = self._get_vlans_names()
+
+        # {vid: [port1, port2]}
+        vlans_ports: dict[int, list[str]] = {}
+
+        # [name, name]
+        interfaces_names = self._get_interfaces_names()
+
+        for vid in vlans_names:
+            vlan_port_info_raw = self.send_command(f"show vlans {vid}")
+            vlans_ports[vid] = [
+                self._get_trk_full_name(line.group("port"), interfaces_names)
+                for line in re.finditer(
+                    r" +(?P<port>\S+) +(?P<mode>Untagged|Tagged) +\S+", vlan_port_info_raw
+                )
+            ]
+
+        return [(vid, ports, vlans_names.get(vid, "")) for vid, ports in vlans_ports.items()]
+
+    @BaseDevice.lock_session
+    def get_mac_table(self) -> MACTableType:
+        #   MAC Address   Located on Port
+        #   ------------- ---------------
+        #   000496-51ad3d Trk2
+        mac_line_pattern = re.compile(rf" +(?P<mac>{self.mac_format}) +(?P<port>\S+)")
+
+        # {vid: vlan_name}
+        vlans_names = self._get_vlans_names()
+        # [name, name]
+        interfaces_names = self._get_interfaces_names()
+
+        # [(vid, mac, mac_type, port)]
+        result: MACTableType = []
+        for vid in vlans_names:
+            mac_table_by_vlan_raw = self.send_command(f"show mac-address vlan {vid}")
+
+            for line in mac_line_pattern.finditer(mac_table_by_vlan_raw):
+                result.append(
+                    (
+                        vid,
+                        line.group("mac"),
+                        "dynamic",
+                        self._get_trk_full_name(line.group("port"), interfaces_names),
+                    )
+                )
+
+        return result
+
+    def _get_interfaces_names(self) -> list[str]:
+        """Возвращает список имеющихся интерфейсов"""
+        return re.findall(r" +(?P<name>\d\S*) +\S+ +\|", self.send_command("show interfaces brief"))
+
+    @staticmethod
+    def _get_trk_full_name(short: str, full_names: list[str]) -> str:
+        """
+        Возвращает полное название для Trk интерфейса.
+        Если это другой интерфейс, то название не меняется.
+
+        12 -> 12
+        Trk1 -> 25-Trk1
+        """
+        if not re.search(r"^trk\d+$", short, re.IGNORECASE):
+            return short
+
+        for full_name in full_names:
+            if re.search(short, full_name, re.IGNORECASE):
+                return full_name
+        return short
+
+    def _get_vlans_names(self) -> dict[int, str]:
+        # # show vlans
+        #
+        #  Status and Counters - VLAN Information
+        #
+        #   Maximum VLANs to support : 2
+        #   Primary VLAN : DEFAULT_VLAN
+        #   Management VLAN :
+        #
+        #   802.1Q VLAN ID Name         Status       Voice
+        #   -------------- ------------ ------------ -----
+        #   1              DEFAULT_VLAN Port-based   No
+        #   2              name         Port-based   No
+        vlans_info_raw = self.send_command("show vlans")
+
+        # {vid: vlan_name}
+        return {
+            int(line.group("vid")): line.group("name")
+            for line in re.finditer(r" +(?P<vid>\d+) +(?P<name>\S+) +\S+", vlans_info_raw)
+        }
+
+    @BaseDevice.lock_session
+    def search_ip(self, ip_address: str) -> list[ArpInfoResult]:
+        return self._search_in_arp(ip_address)
+
+    @BaseDevice.lock_session
+    def search_mac(self, mac_address: str) -> list[ArpInfoResult]:
+        if len(mac_address) < 12:
+            return []
+
+        formatted_mac = "{}{}{}{}{}{}-{}{}{}{}{}{}".format(*mac_address.lower())
+        return self._search_in_arp(formatted_mac)
+
+    def _search_in_arp(self, value: str) -> list[ArpInfoResult]:
+        arp_table_raw = self.send_command("show arp")
+        arp_line = [line for line in arp_table_raw.splitlines() if value in line]
+        if not arp_line:
+            return []
+
+        mac_table = self.get_mac_table()
+        mac_vlan = {mac: vid for vid, mac, *_ in mac_table}
+
+        return [
+            ArpInfoResult(
+                ip=line.group("ip"),
+                mac=line.group("mac"),
+                port=line.group("port"),
+                vlan=str(mac_vlan.get(line.group("mac"), 1)),
+            )
+            for line in re.finditer(
+                rf" +(?P<ip>\d+\S+\d+) +(?P<mac>{self.mac_format}) +\S+ +(?P<port>\S+)",
+                arp_line[0],
+            )
+        ]
 
     @validate_port(if_invalid_return=[])
     @BaseDevice.lock_session
@@ -148,6 +284,12 @@ class ProCurve(BaseDevice, AbstractConfigDevice):
         for mac in mac_list:
             result.append((0, mac))
         return result
+
+    @staticmethod
+    def _get_like_trk(port: str):
+        if trk := re.search(r"-(Trk\d+)$", port, flags=re.IGNORECASE):
+            return trk.group(1).lower()
+        return port
 
     def reload_port(self, port: str, save_config=True) -> str:
         self.send_command("configure")
