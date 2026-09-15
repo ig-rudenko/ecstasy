@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.contrib.auth import logout
+from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -40,6 +42,7 @@ class OIDCAPIView(APIView):
                 "url": settings.KEYCLOAK_URL or "",
                 "clientId": settings.KEYCLOAK_CLIENT_ID or "",
                 "realm": settings.KEYCLOAK_REALM or "",
+                "scopes": settings.OIDC_RP_SCOPES if settings.KEYCLOAK_ENABLE else "",
                 "authorizationEndpoint": (
                     settings.OIDC_OP_AUTHORIZATION_ENDPOINT if settings.KEYCLOAK_ENABLE else ""
                 ),
@@ -52,3 +55,13 @@ class OIDCAPIView(APIView):
                 ),
             }
         )
+
+
+class LocalSessionLogoutAPIView(APIView):
+    """Delete the local Django session without ending Keycloak SSO."""
+
+    def delete(self, request, *args, **kwargs):
+        """Delete the local Django session without ending the Keycloak SSO session."""
+
+        logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -2,12 +2,15 @@
 import { ref } from "vue";
 import { useStore } from "vuex";
 
+import { isOIDCLogin } from "@/oidc";
+
 const store = useStore();
 const logoutVisible = ref(false);
+const oidcLogin = isOIDCLogin();
 
-async function logout() {
-    await store.dispatch("auth/logout");
-    location.href = "/account/login";
+async function logout(endKeycloakSession: boolean) {
+    const redirectUrl = await store.dispatch("auth/logout", endKeycloakSession);
+    location.href = redirectUrl;
 }
 </script>
 
@@ -31,7 +34,7 @@ async function logout() {
             <div class="p-4 text-xl font-semibold text-surface-800 dark:text-surface-200">
                 Вы уверены, что хотите выйти?
             </div>
-            <div class="flex justify-end gap-2 p-2">
+            <div class="flex flex-wrap justify-end gap-2 p-2">
                 <Button
                     type="button"
                     label="Нет"
@@ -40,7 +43,22 @@ async function logout() {
                     @click="closeCallback"
                     class="rounded-2xl"
                 />
-                <Button type="button" label="Выйти" severity="danger" @click="logout" class="rounded-2xl" />
+                <Button
+                    type="button"
+                    :label="oidcLogin ? 'Только из Ecstasy' : 'Выйти'"
+                    severity="danger"
+                    outlined
+                    @click="logout(false)"
+                    class="rounded-2xl"
+                />
+                <Button
+                    v-if="oidcLogin"
+                    type="button"
+                    label="Из Ecstasy и OIDC"
+                    severity="danger"
+                    @click="logout(true)"
+                    class="rounded-2xl"
+                />
             </div>
         </template>
     </Dialog>

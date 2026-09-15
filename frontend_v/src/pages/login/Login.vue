@@ -52,8 +52,8 @@ function handleOIDCLogin() {
 }
 
 async function logout() {
-    await store.dispatch("auth/logout");
-    location.href = "/account/login";
+    const redirectUrl = await store.dispatch("auth/logout");
+    location.href = redirectUrl;
 }
 </script>
 

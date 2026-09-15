@@ -8,4 +8,5 @@ urlpatterns = [
     path("myself", views.MyselfAPIView.as_view(), name="myself"),
     path("myself/permissions", views.MyselfPermissionsAPIView.as_view(), name="myself_permissions"),
     path("oidc/config", views.OIDCAPIView.as_view(), name="oidc_config"),
+    path("oidc/session", views.LocalSessionLogoutAPIView.as_view(), name="oidc_session"),
 ]
