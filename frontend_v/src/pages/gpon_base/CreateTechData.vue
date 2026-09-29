@@ -358,7 +358,7 @@
                                     Местоположение: {{ sp.location }}
                                 </td>
                             </tr>
-                            <tr v-if="end3ListErrors && Object.entries(end3ListErrors[index]).length">
+                            <tr v-if="end3ListErrors?.[index]">
                                 <td colspan="2" class="pb-5">
                                     <Message severity="error">{{ end3ListErrors[index] }}</Message>
                                 </td>
@@ -510,7 +510,7 @@ interface CreateTechDataErrors {
         type?: string[];
         portCount?: string[];
         existingSplitter?: string[];
-        list?: Array<Record<string, string[]>>;
+        list?: Partial<Record<number, Record<string, string[]>>>;
     };
 }
 import { getErrorFields, getErrorStatus } from "@/errorFmt";
