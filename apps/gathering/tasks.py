@@ -4,6 +4,7 @@ from datetime import timedelta
 from celery import shared_task
 from celery.result import AsyncResult
 from django.core.cache import cache
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 from pyzabbix.api import logger
@@ -23,6 +24,51 @@ from .services.mac import MacAddressTableGather
 from .services.vlan.collector import VlanTableGather
 
 task_logger = logging.getLogger(__name__)
+
+
+@shared_task(name="reconcile_stale_gathering_tasks_task")
+def reconcile_stale_gathering_tasks_task() -> dict[str, int]:
+    """Завершить запуски RUNNING, отсутствующие среди активных задач Celery."""
+
+    active_tasks = app.control.inspect(timeout=1).active()
+    if active_tasks is None:
+        task_logger.warning("Unable to inspect active Celery tasks; gathering reconciliation skipped")
+        return {"updatedCount": 0}
+
+    active_ids = {task["id"] for tasks in active_tasks.values() for task in tasks}
+
+    now = timezone.now()
+    incomplete_tasks = GatheringTask.objects.filter(
+        status=GatheringTask.Status.RUNNING,
+        finished_at__isnull=True,
+    ).exclude(task_id__in=active_ids).annotate(
+        completed_count=Count(
+            "device_results",
+            filter=~Q(device_results__status=DeviceGatheringResult.Status.RUNNING)
+            & Q(device_results__finished_at__isnull=False),
+        ),
+        successful_count=Count(
+            "device_results",
+            filter=Q(device_results__status=DeviceGatheringResult.Status.SUCCESS)
+            & Q(device_results__finished_at__isnull=False),
+        ),
+        last_finished_at=Max("device_results__finished_at"),
+    )
+    updated_count = 0
+    for task in incomplete_tasks:
+        if task.completed_count == 0 and task.total_devices:
+            status = GatheringTask.Status.FAILURE
+        elif task.completed_count == task.total_devices == task.successful_count:
+            status = GatheringTask.Status.SUCCESS
+        else:
+            status = GatheringTask.Status.PARTIAL
+
+        finished_at = task.last_finished_at if task.completed_count == task.total_devices else now
+        updated_count += GatheringTask.objects.filter(
+            pk=task.pk, status=GatheringTask.Status.RUNNING, finished_at__isnull=True
+        ).update(status=status, finished_at=finished_at)
+
+    return {"updatedCount": updated_count}
 
 
 @shared_task(name="cleanup_gathering_tasks_task")

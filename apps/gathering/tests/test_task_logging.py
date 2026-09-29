@@ -10,7 +10,7 @@ from apps.check.models import AuthGroup, DeviceGroup, Devices
 from apps.gathering.apps import register_tasks
 from apps.gathering.models import DeviceGatheringResult, GatheringTask
 from apps.gathering.services.collectors import ThreadUpdatedStatusDeviceTask
-from apps.gathering.tasks import cleanup_gathering_tasks_task
+from apps.gathering.tasks import cleanup_gathering_tasks_task, reconcile_stale_gathering_tasks_task
 from ecstasy_project.celery import app
 
 
@@ -216,6 +216,112 @@ class GatheringCleanupTaskTests(TestCase):
             cleanup_gathering_tasks_task(0)
 
 
+class StaleGatheringTaskTests(TestCase):
+    """Тесты завершения зависших запусков сбора."""
+
+    @patch("apps.gathering.tasks.app.control.inspect")
+    def test_reconcile_sets_success_and_last_device_finish_time(self, inspect) -> None:
+        """Отсутствующий на воркере запуск получает успешный итог."""
+
+        inspect.return_value.active.return_value = {"worker": []}
+
+        finished_at = timezone.now() - timedelta(minutes=1)
+        task = GatheringTask.objects.create(
+            task_id=str(uuid4()), name="completed", total_devices=1,
+            started_at=finished_at - timedelta(minutes=1),
+        )
+        group = DeviceGroup.objects.create(name="Reconcile")
+        auth_group = AuthGroup.objects.create(name="reconcile", login="user", password="password")
+        device = Devices.objects.create(
+            group=group, auth_group=auth_group, ip="192.0.2.30", name="switch-30",
+        )
+        DeviceGatheringResult.objects.create(
+            task=task, device=device, status=DeviceGatheringResult.Status.SUCCESS,
+            finished_at=finished_at,
+        )
+
+        reconcile_stale_gathering_tasks_task()
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, GatheringTask.Status.SUCCESS)
+        self.assertEqual(task.finished_at, finished_at)
+
+    @patch("apps.gathering.tasks.app.control.inspect")
+    def test_reconcile_marks_incomplete_task_partial(self, inspect) -> None:
+        """Отсутствующий запуск с частью завершённых устройств получает частичный статус."""
+
+        inspect.return_value.active.return_value = {"worker": []}
+
+        task = GatheringTask.objects.create(
+            task_id=str(uuid4()), name="partial", total_devices=2,
+            started_at=timezone.now() - timedelta(hours=25),
+        )
+        group = DeviceGroup.objects.create(name="Partial")
+        auth_group = AuthGroup.objects.create(name="partial", login="user", password="password")
+        device = Devices.objects.create(
+            group=group, auth_group=auth_group, ip="192.0.2.31", name="switch-31",
+        )
+        DeviceGatheringResult.objects.create(
+            task=task, device=device, status=DeviceGatheringResult.Status.FAILURE,
+            finished_at=timezone.now() - timedelta(hours=24),
+        )
+
+        reconcile_stale_gathering_tasks_task()
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, GatheringTask.Status.PARTIAL)
+        self.assertIsNotNone(task.finished_at)
+
+    @patch("apps.gathering.tasks.app.control.inspect")
+    def test_reconcile_marks_task_without_finished_devices_failure(self, inspect) -> None:
+        """Отсутствующий запуск без завершённых устройств получает ошибку."""
+
+        inspect.return_value.active.return_value = {"worker": []}
+
+        task = GatheringTask.objects.create(
+            task_id=str(uuid4()), name="failed", total_devices=1,
+            started_at=timezone.now() - timedelta(hours=25),
+        )
+
+        reconcile_stale_gathering_tasks_task()
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, GatheringTask.Status.FAILURE)
+        self.assertIsNotNone(task.finished_at)
+
+    @patch("apps.gathering.tasks.app.control.inspect")
+    def test_reconcile_leaves_active_and_already_finished_tasks_untouched(self, inspect) -> None:
+        """Активные и ранее завершённые запуски не меняются."""
+
+        recent = GatheringTask.objects.create(task_id=str(uuid4()), name="recent")
+        finished = GatheringTask.objects.create(
+            task_id=str(uuid4()), name="finished", status=GatheringTask.Status.SUCCESS,
+            started_at=timezone.now() - timedelta(hours=25), finished_at=timezone.now(),
+        )
+        inspect.return_value.active.return_value = {"worker": [{"id": recent.task_id}]}
+
+        reconcile_stale_gathering_tasks_task()
+
+        recent.refresh_from_db()
+        finished.refresh_from_db()
+        self.assertEqual(recent.status, GatheringTask.Status.RUNNING)
+        self.assertIsNone(recent.finished_at)
+        self.assertEqual(finished.status, GatheringTask.Status.SUCCESS)
+
+    @patch("apps.gathering.tasks.app.control.inspect")
+    def test_reconcile_does_nothing_when_workers_do_not_reply(self, inspect) -> None:
+        """Недоступный inspect не позволяет считать отсутствие задачи доказанным."""
+
+        inspect.return_value.active.return_value = None
+        task = GatheringTask.objects.create(task_id=str(uuid4()), name="unknown")
+
+        self.assertEqual(reconcile_stale_gathering_tasks_task(), {"updatedCount": 0})
+
+        task.refresh_from_db()
+        self.assertEqual(task.status, GatheringTask.Status.RUNNING)
+        self.assertIsNone(task.finished_at)
+
+
 class GatheringTasksRegistrationTests(TestCase):
     """Тесты регистрации периодических задач gathering."""
 
@@ -230,3 +336,13 @@ class GatheringTasksRegistrationTests(TestCase):
         self.assertEqual(task.kwargs, '{"retention_days": 14}')
         self.assertEqual(task.crontab.minute, "30")
         self.assertEqual(task.crontab.hour, "4")
+
+    def test_register_tasks_creates_stale_task_reconciliation(self) -> None:
+        """Post-migrate регистрация создаёт ежедневную проверку зависших задач."""
+
+        register_tasks()
+
+        task = PeriodicTask.objects.get(name="Завершение зависших задач сбора оборудования")
+        self.assertEqual(task.task, reconcile_stale_gathering_tasks_task.name)
+        self.assertTrue(task.enabled)
+        self.assertEqual(task.crontab.minute, "*/5")

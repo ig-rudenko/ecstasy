@@ -34,6 +34,7 @@ def register_tasks(*args, **kwargs) -> None:
         MacTablesGatherTask,
         VlanTablesGatherTask,
         cleanup_gathering_tasks_task,
+        reconcile_stale_gathering_tasks_task,
     )
 
     ConfigurationGatherTask.register_task()
@@ -51,5 +52,14 @@ def register_tasks(*args, **kwargs) -> None:
             "enabled": True,
             "description": "Удаляет старые запуски сбора и связанные результаты оборудования. "
             "В аргументе указывается количество дней хранения.",
+        },
+    )
+
+    PeriodicTask.objects.get_or_create(
+        task=reconcile_stale_gathering_tasks_task.name,
+        defaults={
+            "name": "Завершение зависших задач сбора оборудования",
+            "crontab": get_crontab_schedule(minute="*/5", hour="*"),
+            "enabled": True,
         },
     )
