@@ -47,9 +47,10 @@ export const auth = {
             commit("loginSuccess", currentUser);
             return Promise.resolve();
         },
-        async logout({ commit }: any) {
-            await AuthService.logout();
+        async logout({ commit }: any, endKeycloakSession = false) {
+            const redirectUrl = await AuthService.logout(endKeycloakSession);
             commit("logout");
+            return redirectUrl;
         },
         refreshTokens({ commit }: any, tokens: any) {
             commit("refreshTokens", tokens);

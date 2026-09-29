@@ -124,6 +124,21 @@ class ErrorHandlerTests(SimpleTestCase):
             ],
         )
 
+    def test_validation_error_normalizes_list_errors_by_index(self) -> None:
+        """Dictionary-based list errors contain the invalid item index in their field path."""
+        problem = build_problem(
+            exc=ValidationError(),
+            data={"end3": {"list": {2: {"location": ["This field is required."]}}}},
+            http_status=status.HTTP_400_BAD_REQUEST,
+            title="Bad Request",
+            instance="/api/example/",
+        )
+
+        self.assertEqual(
+            problem["errors"],
+            [{"detail": "This field is required.", "field": "end3.list.2.location"}],
+        )
+
     def test_problem_types_declare_http_status_code(self) -> None:
         """Every configured problem type declares the HTTP status code it represents."""
         for exc_class, problem_type in PROBLEM_TYPES.items():

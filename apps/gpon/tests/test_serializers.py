@@ -422,12 +422,7 @@ class TestCreateTechDataSerializer(TestCase):
             serializer.errors,
             {
                 "end3": {
-                    "list": [
-                        {},
-                        {},
-                        {"location": [ErrorDetail(string="Обязательное поле.", code="required")]},
-                        {},
-                    ]
+                    "list": {2: {"location": [ErrorDetail(string="Обязательное поле.", code="required")]}}
                 }
             },
         )

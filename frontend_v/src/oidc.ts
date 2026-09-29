@@ -5,12 +5,14 @@ import { normalizeAuthRedirectPath } from "@/services/auth/redirect";
 
 const OIDC_PENDING_STORAGE_KEY = "oidc-pending-state";
 const OIDC_LOGIN_STORAGE_KEY = "oidc-login";
+const OIDC_ID_TOKEN_STORAGE_KEY = "oidc-id-token";
 
 export interface OIDCConfig {
     enabled: boolean;
     url: string;
     clientId: string;
     realm: string;
+    scopes: string;
     authorizationEndpoint: string;
     tokenEndpoint: string;
     userinfoEndpoint: string;
@@ -111,7 +113,22 @@ export function isOIDCLogin(): boolean {
 
 export function clearOIDCLogin(): void {
     setOIDCLogin(false);
+    localStorage.removeItem(OIDC_ID_TOKEN_STORAGE_KEY);
     clearRefreshTimer();
+}
+
+export async function getOIDCLogoutUrl(): Promise<string | null> {
+    const config = await ensureOIDCConfig();
+    if (!config?.enabled) return null;
+
+    const query = new URLSearchParams({
+        client_id: config.clientId,
+        post_logout_redirect_uri: `${window.location.origin}/account/login`,
+    });
+    const idToken = localStorage.getItem(OIDC_ID_TOKEN_STORAGE_KEY);
+    if (idToken) query.set("id_token_hint", idToken);
+
+    return `${config.logoutEndpoint}?${query.toString()}`;
 }
 
 export async function fetchOIDCConfig(): Promise<OIDCConfig> {
@@ -179,7 +196,7 @@ export async function beginOIDCLogin(redirectPath = "/"): Promise<void> {
         client_id: config.clientId,
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: "openid profile email offline_access",
+        scope: config.scopes,
         code_challenge: challenge,
         code_challenge_method: "S256",
         state,
@@ -220,18 +237,20 @@ export async function completeOIDCLogin(code: string, state: string): Promise<st
     const payload = (await response.json()) as {
         access_token: string;
         refresh_token?: string;
+        id_token?: string;
         expires_in: number;
     };
 
     if (!payload.refresh_token) {
-        throw new Error("OIDC-провайдер не вернул refresh_token. Проверьте scope offline_access и настройки клиента.");
+        throw new Error("OIDC-провайдер не вернул refresh_token. Проверьте настройку Use refresh tokens клиента.");
     }
 
     tokenService.setTokens(payload.access_token, payload.refresh_token);
+    if (payload.id_token) localStorage.setItem(OIDC_ID_TOKEN_STORAGE_KEY, payload.id_token);
     setOIDCLogin(true);
+
     scheduleRefresh(payload.expires_in);
     clearOIDCState();
-
     return normalizeAuthRedirectPath(pendingState.redirectPath);
 }
 
@@ -276,10 +295,12 @@ export async function refreshOIDCTokens(force = false): Promise<boolean> {
         const payload = (await response.json()) as {
             access_token: string;
             refresh_token?: string;
+            id_token?: string;
             expires_in: number;
         };
 
         tokenService.setTokens(payload.access_token, payload.refresh_token ?? refreshToken);
+        if (payload.id_token) localStorage.setItem(OIDC_ID_TOKEN_STORAGE_KEY, payload.id_token);
         scheduleRefresh(payload.expires_in);
         return true;
     } finally {

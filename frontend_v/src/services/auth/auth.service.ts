@@ -1,9 +1,10 @@
 import axios from "axios";
 
+import api from "@/services/api";
 import { LoginUser } from "@/services/user";
 import UserService from "@/services/auth/user.service";
 import { tokenService } from "@/services/auth/token.service";
-import { clearOIDCLogin, isOIDCLogin } from "@/oidc";
+import { clearOIDCLogin, getOIDCLogoutUrl, isOIDCLogin } from "@/oidc";
 import pinnedDevices from "@/services/pinnedDevices.ts";
 
 class AuthService {
@@ -24,7 +25,17 @@ class AuthService {
         return Promise.reject();
     }
 
-    async logout() {
+    async logout(endKeycloakSession = false): Promise<string> {
+        const oidcLogin = isOIDCLogin();
+        let redirectUrl = "/account/login";
+
+        if (oidcLogin) {
+            if (endKeycloakSession) {
+                redirectUrl = (await getOIDCLogoutUrl()) ?? redirectUrl;
+            }
+            await api.delete("/api/v1/accounts/oidc/session");
+        }
+
         clearOIDCLogin();
         tokenService.removeTokens();
         UserService.removeUser();
@@ -34,6 +45,8 @@ class AuthService {
 
         // Возвращаем в хранилище избранные устройства.
         pinnedDevices.save();
+
+        return redirectUrl;
     }
 }
 

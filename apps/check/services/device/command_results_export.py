@@ -2,11 +2,13 @@ from io import BytesIO
 
 from django.utils import timezone
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Alignment, Font
 from openpyxl.worksheet.worksheet import Worksheet
 
 from apps.check.models import BulkDeviceCommandExecution, BulkDeviceCommandExecutionResult
 
+EXCEL_CELL_MAX_LENGTH = 32_767
 EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 RESULT_HEADERS = [
@@ -59,6 +61,19 @@ def write_execution_summary(sheet: Worksheet, execution: BulkDeviceCommandExecut
         sheet.cell(row=row_index, column=2, value=value)
 
 
+def sanitize_excel_text(value: object | None) -> str:
+    if value is None:
+        return ""
+
+    text = str(value)
+
+    # Удаляем недопустимые для Excel управляющие символы.
+    text = ILLEGAL_CHARACTERS_RE.sub("", text)
+
+    # Excel не поддерживает строки длиннее 32767 символов в одной ячейке.
+    return text[:EXCEL_CELL_MAX_LENGTH]
+
+
 def write_results_table(sheet: Worksheet, results: list[BulkDeviceCommandExecutionResult]) -> None:
     """Write result rows to the worksheet."""
     header_row = 10
@@ -67,15 +82,19 @@ def write_results_table(sheet: Worksheet, results: list[BulkDeviceCommandExecuti
 
     for row_index, result in enumerate(results, start=header_row + 1):
         sheet.cell(row=row_index, column=1, value=result.device_id)
-        sheet.cell(row=row_index, column=2, value=result.device_name)
-        sheet.cell(row=row_index, column=3, value=result.status)
-        sheet.cell(row=row_index, column=4, value=result.command_text)
-        sheet.cell(row=row_index, column=5, value=result.output)
-        sheet.cell(row=row_index, column=6, value=result.detail)
-        sheet.cell(row=row_index, column=7, value=result.error)
+        sheet.cell(row=row_index, column=2, value=sanitize_excel_text(result.device_name))
+        sheet.cell(row=row_index, column=3, value=sanitize_excel_text(result.status))
+        sheet.cell(row=row_index, column=4, value=sanitize_excel_text(result.command_text))
+        sheet.cell(row=row_index, column=5, value=sanitize_excel_text(result.output))
+        sheet.cell(row=row_index, column=6, value=sanitize_excel_text(result.detail))
+        sheet.cell(row=row_index, column=7, value=sanitize_excel_text(result.error))
         sheet.cell(row=row_index, column=8, value=result.duration)
-        sheet.cell(row=row_index, column=9, value=format_excel_datetime(result.created_at))
-        sheet.cell(row=row_index, column=10, value=format_excel_datetime(result.updated_at))
+        sheet.cell(
+            row=row_index, column=9, value=sanitize_excel_text(format_excel_datetime(result.created_at))
+        )
+        sheet.cell(
+            row=row_index, column=10, value=sanitize_excel_text(format_excel_datetime(result.updated_at))
+        )
 
 
 def format_excel_datetime(value) -> str:

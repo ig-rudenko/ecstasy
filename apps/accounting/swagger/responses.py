@@ -8,6 +8,7 @@ class OIDCSwaggerSchema(serializers.Serializer):
     url = serializers.URLField()
     clientId = serializers.CharField()
     realm = serializers.CharField()
+    scopes = serializers.CharField()
     authorizationEndpoint = serializers.URLField()
     tokenEndpoint = serializers.URLField()
     userinfoEndpoint = serializers.URLField()
