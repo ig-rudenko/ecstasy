@@ -11,7 +11,18 @@ class FindDescConfig(AppConfig):
 
         from .new_permissions import create_permission
 
-        post_migrate.connect(register_tasks, sender=self, weak=False, dispatch_uid="gathering.register_tasks")
+        post_migrate.connect(
+            register_tasks,
+            sender=self,
+            weak=False,
+            dispatch_uid="gathering.register_tasks",
+        )
+        post_migrate.connect(
+            register_reconcile_stale_gathering_tasks_task,
+            sender=self,
+            weak=False,
+            dispatch_uid="gathering.register_reconcile_stale_gathering_tasks_task",
+        )
         post_migrate.connect(
             create_permission,
             sender=self,
@@ -34,7 +45,6 @@ def register_tasks(*args, **kwargs) -> None:
         MacTablesGatherTask,
         VlanTablesGatherTask,
         cleanup_gathering_tasks_task,
-        reconcile_stale_gathering_tasks_task,
     )
 
     ConfigurationGatherTask.register_task()
@@ -54,6 +64,15 @@ def register_tasks(*args, **kwargs) -> None:
             "В аргументе указывается количество дней хранения.",
         },
     )
+
+
+def register_reconcile_stale_gathering_tasks_task(*args, **kwargs) -> None:
+    # pylint: disable-next=import-outside-toplevel
+    from django_celery_beat.models import PeriodicTask
+
+    from ecstasy_project.celery_schedules import get_crontab_schedule
+
+    from .tasks import reconcile_stale_gathering_tasks_task
 
     PeriodicTask.objects.get_or_create(
         task=reconcile_stale_gathering_tasks_task.name,
