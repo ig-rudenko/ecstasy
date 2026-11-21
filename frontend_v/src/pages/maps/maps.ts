@@ -28,6 +28,7 @@ import {
     LeafletTileLayerManager,
 } from "@/services/mapTiles";
 import { strFormatArgs, textToHtml, wrapLinks } from "@/formats";
+import { bindGeoJsonPopup, bindLazyPopup } from "@/pages/maps/geoJsonPopup";
 import { loadLayers, saveLayers } from "@/pages/maps/layers";
 import LayersObject = Control.LayersObject;
 
@@ -135,7 +136,8 @@ export class MapService {
 
     constructor(
         public mapID: string,
-        public mapHTMLElementID: string
+        public mapHTMLElementID: string,
+        private showExpandedDescription: (html: string) => void
     ) {
         const defaultTileLayer = createDefaultTileLayer();
         this.map = new LMap(mapHTMLElementID, {
@@ -771,7 +773,7 @@ export class MapService {
 
         if (isVisible) {
             if (!element.element) {
-                element.element = instantiateStaticElement(element, this.canvasRenderer);
+                element.element = instantiateStaticElement(element, this.canvasRenderer, this.showExpandedDescription);
             }
 
             if (element.element && !overlay.hasLayer(element.element)) {
@@ -900,33 +902,35 @@ function buildProblemsText(problem: Problems): string {
  * @param renderer - Canvas renderer.
  * @returns Leaflet layer.
  */
-function instantiateStaticElement(element: StaticElementData, renderer: any) {
-    const defaults = element.feature.__defaults;
+function instantiateStaticElement(element: StaticElementData, renderer: any, showExpanded: (html: string) => void) {
+    const feature = element.feature;
+    const defaults = feature.__defaults;
+    let layer: Layer;
 
     if (element.geometryType === "Point") {
-        return createMarker(
-            element.feature,
-            GeoJSON.coordsToLatLng(element.feature.geometry.coordinates),
-            defaults.Marker,
+        layer = createMarker(feature, GeoJSON.coordsToLatLng(feature.geometry.coordinates), defaults.Marker, renderer);
+        if (feature.properties?.device) {
+            bindLazyPopup(layer, renderDevicePopup(feature.properties.device), popupDefaultOptions);
+            return layer;
+        }
+    } else if (element.geometryType === "LineString") {
+        layer = createPolyline(
+            feature,
+            GeoJSON.coordsToLatLngs(feature.geometry.coordinates),
+            defaults.Polygon,
             renderer
         );
-    }
-
-    if (element.geometryType === "LineString") {
-        return createPolyline(
-            element.feature,
-            GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates),
+    } else {
+        layer = createPolygon(
+            feature,
+            GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]),
             defaults.Polygon,
             renderer
         );
     }
 
-    return createPolygon(
-        element.feature,
-        GeoJSON.coordsToLatLngs(element.feature.geometry.coordinates[0]),
-        defaults.Polygon,
-        renderer
-    );
+    bindGeoJsonPopup(layer, feature.properties?.description, showExpanded);
+    return layer;
 }
 
 /**
@@ -939,7 +943,7 @@ function instantiateStaticElement(element: StaticElementData, renderer: any) {
  * @returns Leaflet polygon.
  */
 function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any, renderer?: any) {
-    const polygonLayer = polygon(latlng, {
+    return polygon(latlng, {
         fillColor: feature.properties.fill || defaults.FillColor,
         color: feature.properties.stroke || defaults.BorderColor,
         weight: Number(feature.properties["stroke-width"]) || 2,
@@ -947,10 +951,6 @@ function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any, 
         fillOpacity: feature.properties["fill-opacity"] || defaults.Opacity,
         renderer,
     });
-
-    const popupText = feature.properties?.description;
-    attachLazyInteractions(polygonLayer, { popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "" });
-    return polygonLayer;
 }
 
 /**
@@ -963,16 +963,12 @@ function createPolygon(feature: any, latlng: LatLngExpression[], defaults: any, 
  * @returns Leaflet polyline.
  */
 function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any, renderer?: any) {
-    const line = polyline(latlng, {
+    return polyline(latlng, {
         color: feature.properties.stroke || defaults.BorderColor,
         weight: feature.properties["stroke-width"] || 2,
         fillOpacity: feature.properties["stroke-opacity"] || defaults.Opacity,
         renderer,
     });
-
-    const popupText = feature.properties?.description;
-    attachLazyInteractions(line, { popupContent: popupText ? wrapLinks(textToHtml(popupText)) : "" });
-    return line;
 }
 
 /**
@@ -985,7 +981,6 @@ function createPolyline(feature: any, latlng: LatLngExpression[], defaults: any,
  * @returns Leaflet marker.
  */
 function createMarker(feature: any, latlng: LatLngExpression, defaults: any, renderer?: any) {
-    let popupContent = getFeaturePopupContent(feature);
     let tooltipText = feature.properties?.iconCaption || feature.properties?.name || null;
     let fillColor =
         feature.properties?.["marker-color"] ||
@@ -1007,7 +1002,6 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any, ren
         });
 
         attachLazyInteractions(point, {
-            popupContent,
             tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
         });
 
@@ -1023,25 +1017,9 @@ function createMarker(feature: any, latlng: LatLngExpression, defaults: any, ren
 
     const markerLayer = marker(latlng, { opacity: 1, icon: svgIcon });
     attachLazyInteractions(markerLayer, {
-        popupContent,
         tooltipContent: tooltipText ? wrapLinks(tooltipText) : "",
     });
     return markerLayer;
-}
-
-/**
- * Возвращает HTML popup для GeoJSON feature.
- *
- * @param feature - GeoJSON feature.
- * @returns HTML popup.
- */
-function getFeaturePopupContent(feature: any) {
-    if (feature.properties?.device) {
-        return renderDevicePopup(feature.properties.device);
-    }
-
-    const popupText = feature.properties?.description;
-    return popupText ? wrapLinks(textToHtml(popupText)) : "";
 }
 
 /**
@@ -1166,13 +1144,7 @@ function attachLazyInteractions(layer: any, config: { popupContent?: string; too
     }
 
     if (config.popupContent) {
-        layer.on("click", () => {
-            if (!layer.getPopup()) {
-                layer.bindPopup(config.popupContent, popupDefaultOptions);
-            }
-
-            layer.openPopup();
-        });
+        bindLazyPopup(layer, config.popupContent, popupDefaultOptions);
     }
 }
 

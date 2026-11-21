@@ -13,6 +13,8 @@ const search = ref("");
 const showSearch = ref(false);
 const fileMapUrl = ref("");
 const mapData = ref<MapDetail | null>(null);
+const expandedDescription = ref("");
+const showDescription = ref(false);
 
 // Скрыто по умолчанию.
 const showSearchPanel = ref(false);
@@ -108,7 +110,10 @@ onMounted(async () => {
         return;
     }
 
-    mapService = new MapService(mapId, "map");
+    mapService = new MapService(mapId, "map", (html) => {
+        expandedDescription.value = html;
+        showDescription.value = true;
+    });
     await mapService.renderMapGroups();
     await mapService.renderMarkers();
 
@@ -162,6 +167,16 @@ onUnmounted(() => {
             <iframe :src="fileMapUrl" class="h-full w-full rounded-4xl" />
         </div>
         <div v-else id="map" class="h-full w-full"></div>
+
+        <Dialog
+            v-model:visible="showDescription"
+            modal
+            header="Описание объекта"
+            style="width: 80vw; max-height: 80dvh"
+            @after-hide="expandedDescription = ''"
+        >
+            <div class="overflow-auto" v-html="expandedDescription"></div>
+        </Dialog>
 
         <div
             class="pointer-events-none absolute inset-x-0 z-500 px-16"
@@ -217,6 +232,45 @@ onUnmounted(() => {
 </template>
 
 <style>
+.geojson-popup .leaflet-popup-content {
+    max-width: calc(80vw - 46px);
+    max-height: calc(80dvh - 48px);
+    overflow: auto;
+}
+
+.geojson-description {
+    white-space: pre-line;
+}
+
+.geojson-description a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.geojson-description label:has(> input[type="checkbox"]) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+.geojson-description label:has(> input[type="checkbox"]:not(:checked)) + div[data-geojson-extra] {
+    display: none;
+}
+
+.geojson-description :is(ul, ol) {
+    padding-inline-start: 1.5em;
+}
+
+.geojson-description ul {
+    list-style: disc;
+}
+
+.geojson-description ol {
+    list-style: decimal;
+}
+
 .device-popup {
     min-width: 14rem;
     color: #111827;

@@ -38,21 +38,25 @@ def reconcile_stale_gathering_tasks_task() -> dict[str, int]:
     active_ids = {task["id"] for tasks in active_tasks.values() for task in tasks}
 
     now = timezone.now()
-    incomplete_tasks = GatheringTask.objects.filter(
-        status=GatheringTask.Status.RUNNING,
-        finished_at__isnull=True,
-    ).exclude(task_id__in=active_ids).annotate(
-        completed_count=Count(
-            "device_results",
-            filter=~Q(device_results__status=DeviceGatheringResult.Status.RUNNING)
-            & Q(device_results__finished_at__isnull=False),
-        ),
-        successful_count=Count(
-            "device_results",
-            filter=Q(device_results__status=DeviceGatheringResult.Status.SUCCESS)
-            & Q(device_results__finished_at__isnull=False),
-        ),
-        last_finished_at=Max("device_results__finished_at"),
+    incomplete_tasks = (
+        GatheringTask.objects.filter(
+            status=GatheringTask.Status.RUNNING,
+            finished_at__isnull=True,
+        )
+        .exclude(task_id__in=active_ids)
+        .annotate(
+            completed_count=Count(
+                "device_results",
+                filter=~Q(device_results__status=DeviceGatheringResult.Status.RUNNING)
+                & Q(device_results__finished_at__isnull=False),
+            ),
+            successful_count=Count(
+                "device_results",
+                filter=Q(device_results__status=DeviceGatheringResult.Status.SUCCESS)
+                & Q(device_results__finished_at__isnull=False),
+            ),
+            last_finished_at=Max("device_results__finished_at"),
+        )
     )
     updated_count = 0
     for task in incomplete_tasks:

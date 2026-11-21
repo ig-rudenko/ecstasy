@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+    <meta charset="utf-8" />
+    <title>GeoJSON popup</title>
+    <div id="map" style="width: 100vw; height: 100vh"></div>
+    <output id="result">RUNNING</output>
+    <script type="module">
+        import { circleMarker, map, marker } from "leaflet";
+        import "leaflet/dist/leaflet.css";
+        import imageUrl from "leaflet/dist/images/marker-icon.png?no-inline";
+        import "../src/pages/maps/MapView.vue";
+        import { bindGeoJsonPopup } from "../src/pages/maps/geoJsonPopup";
+
+        const result = document.getElementById("result");
+        function assert(condition, message) {
+            if (!condition) throw new Error(message);
+        }
+
+        try {
+            const leafletMap = map("map", { fadeAnimation: false }).setView([0, 0], 5);
+            const description = '<strong style="color: #0f766e; position: fixed; background-image: url(/ignored.png)">HTML</strong>' +
+                ' https://example.com <a href="/help">Help</a>' +
+                '<a href="javascript:void(0)" onclick="return false">Invalid</a>' +
+                '<img alt="Preview" onerror="return false"><iframe></iframe>' +
+                '<script>document.body.dataset.scriptExecuted = "true"</scr' + 'ipt>';
+            for (const layer of [marker([0, 0]), circleMarker([0, 0])]) {
+                layer.addTo(leafletMap);
+                bindGeoJsonPopup(layer, description, () => { throw new Error("Small popup opened a dialog"); });
+                const click = () => layer.fire("click", { latlng: layer.getLatLng(), originalEvent: new MouseEvent("click") });
+                click();
+                assert(layer.isPopupOpen(), "Popup did not open on the first click");
+                leafletMap.closePopup();
+                click();
+                assert(layer.isPopupOpen(), "Popup did not reopen");
+                const content = layer.getPopup().getContent();
+                const heading = content.querySelector("strong");
+                assert(heading?.textContent === "HTML", "HTML was not rendered");
+                assert(getComputedStyle(heading).color === "rgb(15, 118, 110)", "Popup did not apply allowed CSS");
+                assert(!heading.style.position && !heading.style.backgroundImage, "Unexpected CSS reached the popup");
+                const links = content.querySelectorAll("a[href]");
+                assert(links.length === 2 && links[0].href === "https://example.com/" && links[1].getAttribute("href") === "/help", "Links were not preserved safely");
+                assert(!content.querySelector("[onclick], [onerror], script, iframe"), "Unexpected active HTML");
+                assert(!document.body.dataset.scriptExecuted, "A description script executed");
+                layer.remove();
+            }
+
+            for (const description of ["<p>Строка</p>".repeat(150), `<pre>${"W".repeat(600)}</pre>`]) {
+                const layer = marker([0, 0]).addTo(leafletMap);
+                let expandedHtml = "";
+                bindGeoJsonPopup(layer, '<p style="color: #0f766e; position: fixed">Заголовок</p>' + description +
+                    '<a href="javascript:void(0)" onclick="return false">Invalid</a>',
+                    (html) => { expandedHtml = html; });
+                layer.fire("click", { latlng: layer.getLatLng(), originalEvent: new MouseEvent("click") });
+                assert(expandedHtml && !layer.isPopupOpen(), "Oversized description did not switch to a dialog");
+                assert(expandedHtml.includes('style="color: rgb(15, 118, 110);"'), "Allowed CSS was lost in the dialog");
+                assert(!expandedHtml.includes("position:"), "Unexpected CSS reached the dialog");
+                assert(!/javascript:|onclick=/.test(expandedHtml), "Unsafe link reached the dialog");
+                layer.remove();
+            }
+
+            const imageLayer = marker([0, 0]).addTo(leafletMap);
+            let imageExpanded = false;
+            bindGeoJsonPopup(imageLayer, `<img src="${imageUrl}" alt="Пример">`, () => { imageExpanded = true; });
+            imageLayer.fire("click", { latlng: imageLayer.getLatLng(), originalEvent: new MouseEvent("click") });
+            const image = imageLayer.getPopup().getContent().querySelector("img");
+            await image.decode();
+            image.width = 200;
+            image.height = 100;
+            image.dispatchEvent(new Event("load"));
+            assert(imageLayer.isPopupOpen(), "A small image should fit after loading");
+            image.height = 2000;
+            image.dispatchEvent(new Event("load"));
+            assert(imageExpanded && !imageLayer.isPopupOpen(), "A tall image should switch to a dialog after loading");
+
+            const disclosure = '<label><input type="checkbox" onclick="return false"> Подробности</label>';
+            const disclosureLayer = marker([0, 0]).addTo(leafletMap);
+            bindGeoJsonPopup(
+                disclosureLayer,
+                disclosure + '<div data-geojson-extra>Сведения об узле</div><input type="text">',
+                () => { throw new Error("Small disclosure opened a dialog"); }
+            );
+            disclosureLayer.fire("click", {
+                latlng: disclosureLayer.getLatLng(), originalEvent: new MouseEvent("click")
+            });
+            const disclosureContent = disclosureLayer.getPopup().getContent();
+            const checkbox = disclosureContent.querySelector('input[type="checkbox"]');
+            const extra = disclosureContent.querySelector("[data-geojson-extra]");
+            assert(checkbox && extra, "Checkbox disclosure did not render");
+            assert(!disclosureContent.querySelector('input[type="text"], [onclick]'), "Unexpected input or handler");
+            assert(getComputedStyle(extra).display === "none", "Unchecked disclosure should hide the panel");
+            disclosureContent.querySelector("label").click();
+            assert(checkbox.checked && getComputedStyle(extra).display !== "none", "Checkbox did not reveal the panel");
+            assert(document.activeElement === checkbox, "Checkbox lost focus after expanding the panel");
+            checkbox.click();
+            assert(getComputedStyle(extra).display === "none", "Checkbox did not hide the panel again");
+            disclosureLayer.remove();
+
+            const largeDisclosureLayer = marker([0, 0]).addTo(leafletMap);
+            let expandedDisclosure = "";
+            bindGeoJsonPopup(
+                largeDisclosureLayer,
+                disclosure + '<div data-geojson-extra>' + "<p>Строка</p>".repeat(150) + "</div>",
+                (html) => { expandedDisclosure = html; }
+            );
+            largeDisclosureLayer.fire("click", {
+                latlng: largeDisclosureLayer.getLatLng(), originalEvent: new MouseEvent("click")
+            });
+            assert(!expandedDisclosure && largeDisclosureLayer.isPopupOpen(), "Collapsed panel should fit in the popup");
+            largeDisclosureLayer.getPopup().getContent().querySelector("input").click();
+            const dialogContent = document.createElement("template");
+            dialogContent.innerHTML = expandedDisclosure;
+            assert(dialogContent.content.querySelector("input")?.checked, "Checkbox state was lost in the dialog");
+            assert(!largeDisclosureLayer.isPopupOpen(), "Expanded panel should switch to a dialog");
+
+            result.textContent = "PASS";
+        } catch (error) {
+            result.textContent = `FAIL: ${error.message}`;
+        }
+    </script>
+</html>

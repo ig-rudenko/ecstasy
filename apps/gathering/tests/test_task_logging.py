@@ -227,16 +227,23 @@ class StaleGatheringTaskTests(TestCase):
 
         finished_at = timezone.now() - timedelta(minutes=1)
         task = GatheringTask.objects.create(
-            task_id=str(uuid4()), name="completed", total_devices=1,
+            task_id=str(uuid4()),
+            name="completed",
+            total_devices=1,
             started_at=finished_at - timedelta(minutes=1),
         )
         group = DeviceGroup.objects.create(name="Reconcile")
         auth_group = AuthGroup.objects.create(name="reconcile", login="user", password="password")
         device = Devices.objects.create(
-            group=group, auth_group=auth_group, ip="192.0.2.30", name="switch-30",
+            group=group,
+            auth_group=auth_group,
+            ip="192.0.2.30",
+            name="switch-30",
         )
         DeviceGatheringResult.objects.create(
-            task=task, device=device, status=DeviceGatheringResult.Status.SUCCESS,
+            task=task,
+            device=device,
+            status=DeviceGatheringResult.Status.SUCCESS,
             finished_at=finished_at,
         )
 
@@ -253,16 +260,23 @@ class StaleGatheringTaskTests(TestCase):
         inspect.return_value.active.return_value = {"worker": []}
 
         task = GatheringTask.objects.create(
-            task_id=str(uuid4()), name="partial", total_devices=2,
+            task_id=str(uuid4()),
+            name="partial",
+            total_devices=2,
             started_at=timezone.now() - timedelta(hours=25),
         )
         group = DeviceGroup.objects.create(name="Partial")
         auth_group = AuthGroup.objects.create(name="partial", login="user", password="password")
         device = Devices.objects.create(
-            group=group, auth_group=auth_group, ip="192.0.2.31", name="switch-31",
+            group=group,
+            auth_group=auth_group,
+            ip="192.0.2.31",
+            name="switch-31",
         )
         DeviceGatheringResult.objects.create(
-            task=task, device=device, status=DeviceGatheringResult.Status.FAILURE,
+            task=task,
+            device=device,
+            status=DeviceGatheringResult.Status.FAILURE,
             finished_at=timezone.now() - timedelta(hours=24),
         )
 
@@ -279,7 +293,9 @@ class StaleGatheringTaskTests(TestCase):
         inspect.return_value.active.return_value = {"worker": []}
 
         task = GatheringTask.objects.create(
-            task_id=str(uuid4()), name="failed", total_devices=1,
+            task_id=str(uuid4()),
+            name="failed",
+            total_devices=1,
             started_at=timezone.now() - timedelta(hours=25),
         )
 
@@ -295,8 +311,11 @@ class StaleGatheringTaskTests(TestCase):
 
         recent = GatheringTask.objects.create(task_id=str(uuid4()), name="recent")
         finished = GatheringTask.objects.create(
-            task_id=str(uuid4()), name="finished", status=GatheringTask.Status.SUCCESS,
-            started_at=timezone.now() - timedelta(hours=25), finished_at=timezone.now(),
+            task_id=str(uuid4()),
+            name="finished",
+            status=GatheringTask.Status.SUCCESS,
+            started_at=timezone.now() - timedelta(hours=25),
+            finished_at=timezone.now(),
         )
         inspect.return_value.active.return_value = {"worker": [{"id": recent.task_id}]}
 
